@@ -27,6 +27,8 @@ func _ready() -> void:
 	add_to_group(&"combat_player")
 	VoiceReceiver.spell_heard.connect(_on_spell_heard)
 	VoiceReceiver.engine_status_changed.connect(_on_engine_status_changed)
+	AdaptiveAI.difficulty_changed.connect(func(_diff: int): _update_status())
+	AdaptiveAI.counter_shield_changed.connect(func(_spell: String): _update_status())
 	_shield.mesh = SphereMesh.new()
 	_shield.scale = Vector3(2.2, 2.2, 2.2)
 	var rune := StandardMaterial3D.new()
@@ -77,6 +79,9 @@ func _update_status() -> void:
 	if hud_status_label == null:
 		return
 	var parts := PackedStringArray(["Голос и клавиши" if _engine_connected else "Клавиши 1/2/3 · Shift — шёпот", "ОЗ %d/%d" % [health, MAX_HEALTH]])
+	parts.append("%s (F1–F3)" % AdaptiveAI.get_difficulty_label())
+	if AdaptiveAI.active_counter_spell != "":
+		parts.append("Контр-щит: " + AdaptiveAI.active_counter_spell.to_upper())
 	if shield_left > 0.0:
 		parts.append("ЩИТ")
 	if stealth_left > 0.0:
@@ -100,6 +105,10 @@ func _on_spell_heard(spell: String, confidence: float, volume: float, d20: Dicti
 			cast_name, roundi(confidence * 100.0), mode_tag, d20["d20"], d20["bonus"], d20["total"], d20["tier"]
 		]
 	if d20["d20"] == 1:
+		return
+	if d20.get("countered", false) and not _nearby_guards(spell_radius).is_empty():
+		_last_hit = "Заклинание отражено"
+		_update_status()
 		return
 	var strength: float = d20.get("strength", 1.5 if d20["d20"] == 20 else 1.0)
 	stealth_left = 0.0
@@ -164,9 +173,10 @@ func _melee_attack() -> void:
 		_last_hit = "Крит −%d" % damage if damage > MELEE_DAMAGE else "Удар −%d" % damage
 	_update_status()
 
-func take_hit(amount: int, beam: bool) -> void:
+func take_hit(amount: int, beam: bool) -> bool:
+	var took_damage := shield_left <= 0.0
 	var attack := "Луч" if beam else "Удар"
-	if shield_left > 0.0:
+	if not took_damage:
 		_last_hit = "%s заблокирован" % attack
 	else:
 		health = maxi(0, health - amount)
@@ -178,3 +188,4 @@ func take_hit(amount: int, beam: bool) -> void:
 			health = MAX_HEALTH
 			_last_hit = "Возвращение к точке старта"
 	_update_status()
+	return took_damage
