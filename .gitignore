@@ -1,0 +1,20 @@
+# Godot 4
+godot_project/.godot/
+*.translation
+export.cfg
+export_presets.cfg
+
+# Python / ML
+.venv/
+ai_voice/.venv/
+__pycache__/
+*.py[cod]
+ai_voice/dataset_raw/
+
+# Builds & OS
+builds/
+dist/
+build/
+*.spec
+.DS_Store
+Thumbs.db
