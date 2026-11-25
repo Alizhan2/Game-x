@@ -1,0 +1,42 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/main.tscn" id="1_arena"]
+
+[sub_resource type="StandardMaterial3D" id="SealMaterial"]
+albedo_color = Color(0.28, 0.19, 0.44, 1)
+
+[sub_resource type="BoxMesh" id="DoorMesh"]
+size = Vector3(3.2, 3.2, 0.45)
+material = SubResource("SealMaterial")
+
+[sub_resource type="BoxShape3D" id="DoorShape"]
+size = Vector3(3.2, 3.2, 0.45)
+
+[sub_resource type="BoxMesh" id="FrameMesh"]
+size = Vector3(0.38, 3.5, 0.65)
+
+[node name="CombatTrial" instance=ExtResource("1_arena")]
+
+[node name="SealedPassage" type="StaticBody3D" parent="." groups=["noctar_seals"]]
+position = Vector3(0, 1.6, 0)
+
+[node name="Door" type="MeshInstance3D" parent="SealedPassage"]
+mesh = SubResource("DoorMesh")
+
+[node name="Collision" type="CollisionShape3D" parent="SealedPassage"]
+shape = SubResource("DoorShape")
+
+[node name="LeftJamb" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 1.75, 0)
+mesh = SubResource("FrameMesh")
+
+[node name="RightJamb" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 1.75, 0)
+mesh = SubResource("FrameMesh")
+
+[node name="Inscription" type="Label3D" parent="." groups=["noctar_hidden"]]
+visible = false
+position = Vector3(0, 3.5, 0)
+text = "Печать раскрыта"
+font_size = 52
+modulate = Color(0.83, 0.7, 1, 1)

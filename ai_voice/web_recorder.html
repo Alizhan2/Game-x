@@ -121,13 +121,13 @@
 <body>
   <div class="wrap">
     <h1>Echoes of Arcana — Сбор голосов (16 kHz Mono WAV)</h1>
-    <p class="sub">Работает полностью оффлайн в браузере (Mac + Windows, без установки Python). Файлы сохраняются в формате <code>&lt;word&gt;__&lt;speaker&gt;_NNN.wav</code> для <code>pack_dataset.py</code> и Google Colab.</p>
+    <p class="sub">Работает офлайн в браузере на Mac и Windows. WAV-файлы можно упаковать через <code>pack_dataset.py</code> и загрузить в Google Colab.</p>
 
     <div class="card">
       <div class="grid">
         <div>
           <label for="speaker">Имя участника (латиницей)</label>
-          <input id="speaker" value="ali" placeholder="ali / teammate1 / teammate2" />
+          <input id="speaker" placeholder="ali / teammate1 / teammate2" />
         </div>
         <div>
           <label for="style">Рекомендуемый стиль произношения</label>
@@ -182,10 +182,13 @@
     let analyser = null;
     let scriptNode = null;
     let recording = false;
+    let take;
     let capturedChunks = [];
     let capturedLen = 0;
     const clips = [];
     const counts = { virdan: 0, noktar: 0, targum: 0, background: 0 };
+    const sessionId = Date.now();
+    let takeNumber = 0;
 
     const micBtn = document.getElementById("micBtn");
     const recBtn = document.getElementById("recBtn");
@@ -214,7 +217,9 @@
 
     micBtn.addEventListener("click", async () => {
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+        });
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioCtx.createMediaStreamSource(mediaStream);
         analyser = audioCtx.createAnalyser();
@@ -253,6 +258,14 @@
 
     function startRecording() {
       if (!audioCtx || recording) return;
+      const speaker = document.getElementById("speaker").value.trim().toLowerCase();
+      if (!/^[a-z0-9-]+$/.test(speaker)) {
+        statusText.textContent = "Введи имя участника латиницей. Можно использовать цифры и дефис.";
+        return;
+      }
+      const style = selectedWord === "background" ? "noise" : document.getElementById("style").value;
+      const index = String(++takeNumber).padStart(3, "0");
+      take = { word: selectedWord, filename: `${selectedWord}__${speaker}_${style}_${index}_${sessionId}.wav` };
       capturedChunks = [];
       capturedLen = 0;
       recording = true;
@@ -308,23 +321,19 @@
         merged.set(ch, offset);
         offset += ch.length;
       }
-      const resampled = resampleTo16k(merged, audioCtx.sampleRate);
+      const sampleCount = Math.round(CLIP_SEC * audioCtx.sampleRate);
+      const resampled = resampleTo16k(merged.subarray(0, sampleCount), audioCtx.sampleRate);
       const blob = encodeWav16k(resampled);
-      const speaker = (document.getElementById("speaker").value || "user").replace(/[^a-zA-Z0-9_-]/g, "");
-      const style = document.getElementById("style").value;
-      counts[selectedWord] += 1;
-      const idx = String(counts[selectedWord]).padStart(3, "0");
-      const filename = `${selectedWord}__${speaker}_${style}_${idx}.wav`;
+      counts[take.word] += 1;
       const url = URL.createObjectURL(blob);
 
-      clips.unshift({ word: selectedWord, filename, url, blob });
+      clips.unshift({ ...take, url, blob });
       renderStats();
       renderClips();
-      statusText.textContent = `Сохранено: ${filename}`;
+      statusText.textContent = `Записано: ${take.filename}`;
     }
 
     function renderClips() {
-      if (clips.length === 0) return;
       clipsList.innerHTML = clips
         .map(
           (c, idx) => `
@@ -352,7 +361,7 @@
 
     recBtn.addEventListener("click", startRecording);
     document.addEventListener("keydown", (e) => {
-      if (e.code === "Space" && !recBtn.disabled && document.activeElement.tagName !== "INPUT") {
+      if (e.code === "Space" && !e.repeat && !recBtn.disabled && !e.target.closest("input, select, button, audio")) {
         e.preventDefault();
         startRecording();
       }

@@ -1,40 +1,30 @@
-# -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
 
-block_cipher = None
 base_dir = Path(SPECPATH)
-datas = []
-model_file = base_dir / "spell_model.onnx"
-if model_file.exists():
-    datas.append((str(model_file), "."))
+assets = [base_dir / name for name in ("spell_model.onnx", "silero_vad.onnx", "SILERO_LICENSE.txt")]
+missing = [path.name for path in assets if not path.is_file()]
+if missing:
+    raise SystemExit(f"Missing {', '.join(missing)}. See ai_voice/BUILD_WINDOWS.md.")
 
 a = Analysis(
     [str(base_dir / "voice_engine.py")],
     pathex=[str(base_dir)],
     binaries=[],
-    datas=datas,
-    hiddenimports=["features", "onnxruntime", "sounddevice", "numpy"],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
+    datas=[(str(path), ".") for path in assets],
     noarchive=False,
 )
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+a.binaries = [entry for entry in a.binaries if not entry[0].lower().endswith("-asio.dll")]
+pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
-    a.zipfiles,
     a.datas,
     [],
     name="voice_engine",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=True,
 )

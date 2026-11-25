@@ -36,8 +36,21 @@ func _ready() -> void:
 	if Engine.has_singleton("VoiceReceiver") or get_node_or_null("/root/VoiceReceiver") != null:
 		VoiceReceiver.spell_heard.connect(_on_spell_heard)
 
+# Keyboard selection is also available in the starter arena before the menu loads.
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_F1: set_difficulty(Difficulty.APPRENTICE)
+			KEY_F2: set_difficulty(Difficulty.MAGE)
+			KEY_F3: set_difficulty(Difficulty.ARCHMAGE)
+
 func set_difficulty(diff: Difficulty) -> void:
+	if diff == current_difficulty:
+		return
 	current_difficulty = diff
+	if active_counter_spell != "":
+		active_counter_spell = ""
+		counter_shield_changed.emit("")
 	difficulty_changed.emit(int(diff))
 	_emit_stats()
 
@@ -105,8 +118,8 @@ func get_difficulty_label() -> String:
 			return "Архимаг"
 	return "Маг"
 
-func _on_spell_heard(spell: String, _conf: float, _vol: float, _d20: Dictionary, _whisper: bool) -> void:
-	if spell not in SPELLS:
+func _on_spell_heard(spell: String, _conf: float, _vol: float, d20: Dictionary, _whisper: bool) -> void:
+	if spell not in SPELLS or d20.get("d20", 0) == 1:
 		return
 
 	if not _cast_history.is_empty():
@@ -121,31 +134,30 @@ func _on_spell_heard(spell: String, _conf: float, _vol: float, _d20: Dictionary,
 		_cast_history.pop_front()
 
 	_spell_counts[spell] = int(_spell_counts.get(spell, 0)) + 1
-	_evaluate_counter_shield(spell)
+	# Capture the outcome of THIS cast before arming a possible shield for the next.
+	# The autoload subscribes before the scene's player and enemies.
+	var repeats := _count_trailing_repeats(spell)
+	var threshold := 3 if current_difficulty == Difficulty.APPRENTICE else 2
+	var spam := repeats >= threshold
+	d20["countered"] = is_spell_countered(spell) or spam
+	_evaluate_counter_shield(spell, spam)
 	_emit_stats()
 
-func _evaluate_counter_shield(latest_spell: String) -> void:
-	var repeat_threshold := 3 if current_difficulty == Difficulty.APPRENTICE else 2
-	var repeats := _count_trailing_repeats(latest_spell)
-
-	if repeats >= repeat_threshold and active_counter_spell != latest_spell:
-		active_counter_spell = latest_spell
-		counter_shield_changed.emit(active_counter_spell)
-		taunt_triggered.emit("Архив-0: Паттерн «%s» изучен. Активирован контр-щит!" % latest_spell.to_upper())
-		return
-
-	if current_difficulty == Difficulty.ARCHMAGE and _cast_history.size() >= 4:
-		var predicted := predict_next_spell()
-		if predicted != "" and predicted != latest_spell and active_counter_spell != predicted:
-			active_counter_spell = predicted
-			counter_shield_changed.emit(active_counter_spell)
-			taunt_triggered.emit("Архив-0: Я предугадал твой следующий слог — «%s» заблокирован." % predicted.to_upper())
-			return
-
-	if active_counter_spell != "" and latest_spell != active_counter_spell and repeats == 1:
-		active_counter_spell = ""
-		counter_shield_changed.emit("")
-		taunt_triggered.emit("Архив-0: Неожиданная смена школы… Корректирую модель.")
+func _evaluate_counter_shield(spell: String, spam: bool) -> void:
+	var next_shield := ""
+	var taunt := "Архив-0: Неожиданная смена школы… Корректирую модель."
+	if spam:
+		next_shield = spell
+		taunt = "Архив-0: Паттерн «%s» изучен. Активирован контр-щит!" % spell.to_upper()
+	elif current_difficulty == Difficulty.ARCHMAGE and _cast_history.size() >= 4:
+		var prediction := predict_next_spell()
+		if prediction != spell:
+			next_shield = prediction
+			taunt = "Архив-0: Я предугадал твой следующий слог — «%s»!" % prediction.to_upper()
+	if active_counter_spell != next_shield:
+		active_counter_spell = next_shield
+		counter_shield_changed.emit(next_shield)
+		taunt_triggered.emit(taunt)
 
 func _count_trailing_repeats(target: String) -> int:
 	var count := 0

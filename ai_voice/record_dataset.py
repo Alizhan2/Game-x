@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import time
 import wave
 from pathlib import Path
@@ -29,9 +30,13 @@ def _record_word(sd, np, *, speaker: str, word: str, count: int, out_dir: Path) 
     n_samples = int(TARGET_SR * CLIP_SECONDS)
 
     print(f"\n=== Класс '{word.upper()}' ({count} клипов, speaker={speaker}, {TARGET_SR} Hz) ===")
-    print("Чередуй громкость: часть шёпотом, часть обычно, часть громко!")
+    if word == "background":
+        print("Чередуй тишину, шум комнаты и обычную речь без заклинаний.")
+    else:
+        print("Чередуй громкость: часть шёпотом, часть обычно, часть громко!")
     for idx in range(1, count + 1):
-        input(f"[{idx}/{count}] Нажми Enter и произнеси '{word}'...")
+        prompt = "запиши фон" if word == "background" else f"произнеси '{word}'"
+        input(f"[{idx}/{count}] Нажми Enter и {prompt}...")
         audio = sd.rec(n_samples, samplerate=TARGET_SR, channels=1, dtype="int16")
         sd.wait()
         fname = word_dir / f"{word}__{speaker}_{int(time.time() * 1000)}_{idx:03d}.wav"
@@ -49,6 +54,10 @@ def main() -> int:
 
     if not args.batch and not args.word:
         parser.error("Укажите --word <label> или --batch для записи всех 4 классов.")
+    if not re.fullmatch(r"[A-Za-z0-9-]+", args.speaker):
+        parser.error("Имя участника должно содержать только латинские буквы, цифры или дефис.")
+    if args.count < 1:
+        parser.error("Укажите положительное число записей.")
 
     try:
         import numpy as np

@@ -16,8 +16,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from features import LABELS, TARGET_SAMPLES, TARGET_SR, augment_wave, compute_rms, extract_log_mel, resample_to_16k
-from pack_dataset import organize_and_pack, read_wav_pcm16
-from voice_engine import AdaptiveNoiseGate, build_udp_packet, select_prediction
+from pack_dataset import organize_and_pack, read_wav_pcm16, speaker_from_filename
+from voice_engine import AdaptiveNoiseGate, UtteranceBuffer, build_udp_packet, select_prediction
 
 
 class TestVoicePipeline(unittest.TestCase):
@@ -109,6 +109,32 @@ class TestVoicePipeline(unittest.TestCase):
         self.assertEqual(spell_b, "noktar")
         self.assertGreaterEqual(conf_b, 0.78)
 
+    def test_select_prediction_preserves_confident_background(self) -> None:
+        result = select_prediction([0.6, 0.2, 0.1, 0.1], LABELS, [1.0], {"noktar": [1.0]})
+        self.assertEqual(result, ("background", 0.6))
+
+    def test_one_cast_per_utterance_and_rearm_after_quiet(self) -> None:
+        capture = UtteranceBuffer()
+        results = [capture.add("voice", True, 0.2) for _ in range(100)]
+        self.assertEqual(sum(clip is not None for clip in results), 1)
+
+        for _ in range(5):
+            self.assertIsNone(capture.add("quiet", False, 0.0))
+        for _ in range(3):
+            self.assertIsNone(capture.add("whisper", True, 0.15))
+        for _ in range(4):
+            self.assertIsNone(capture.add("quiet", False, 0.0))
+        _, volume = capture.add("quiet", False, 0.0)
+        self.assertAlmostEqual(volume, 0.15)
+
+    def test_speaker_id_matches_both_recorder_formats(self) -> None:
+        for name in (
+            "virdan__team_a_whisper_003_1795618222123.wav",
+            "virdan__team_a_1795618222123_003.wav",
+            "virdan__team_a_003.wav",
+        ):
+            self.assertEqual(speaker_from_filename(Path(name)), "team_a")
+
     def test_pack_dataset_imports_and_zips(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -129,6 +155,11 @@ class TestVoicePipeline(unittest.TestCase):
                 wf.setframerate(48000)
                 wf.writeframes(struct.pack(f"<{len(samples_48k)}h", *samples_48k))
 
+            (import_dir / "virdan__ali_malformed_003.wav").write_bytes(b"corrupted")
+            with wave.open(str(import_dir / "virdan__ali_normal_002.wav"), "wb") as wf:
+                wf.setparams((1, 2, TARGET_SR, TARGET_SAMPLES, "NONE", "not compressed"))
+                wf.writeframes(bytes(TARGET_SAMPLES * 2))
+
             counts = organize_and_pack(
                 dataset_dir=dataset_dir,
                 import_dir=import_dir,
@@ -144,7 +175,11 @@ class TestVoicePipeline(unittest.TestCase):
 
             self.assertTrue(out_zip.is_file())
             with zipfile.ZipFile(out_zip, "r") as zf:
-                self.assertIn("dataset_raw/virdan/virdan__ali_normal_001.wav", zf.namelist())
+                self.assertEqual(zf.namelist(), ["dataset_raw/virdan/virdan__ali_normal_001.wav"])
+            self.assertEqual(
+                organize_and_pack(dataset_dir=dataset_dir, import_dir=import_dir, out_zip=out_zip),
+                counts,
+            )
 
     @unittest.skipUnless(importlib.util.find_spec("numpy") is not None, "numpy not installed in base python3")
     def test_log_mel_shape_when_numpy_available(self) -> None:

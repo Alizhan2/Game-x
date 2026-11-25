@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Паспорт проекта и Демо-панель для деканата — Echoes of Arcana</title>
+  <style>
+    :root {
+      --bg: #eef2f7;
+      --paper: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --border: #cbd5e1;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --ok: #047857;
+      --ok-soft: #ecfdf5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px 48px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .toolbar {
+      max-width: 860px;
+      margin: 0 auto 16px;
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .toolbar-title {
+      font-size: 0.9rem;
+      color: #cbd5e1;
+    }
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 13px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn.primary {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
+    .btn:hover { filter: brightness(1.1); }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 36px 42px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    .doc-kicker {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.55rem;
+      line-height: 1.2;
+    }
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .stamp {
+      text-align: right;
+      font-size: 0.84rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .stamp strong {
+      display: block;
+      color: var(--ink);
+      font-size: 0.92rem;
+    }
+
+    h2 {
+      margin: 18px 0 8px;
+      font-size: 1.05rem;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+    }
+    p { margin: 0 0 8px; font-size: 0.93rem; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      background: #f8fafc;
+    }
+    .box-ok {
+      border-color: #a7f3d0;
+      background: var(--ok-soft);
+    }
+    .box h3 {
+      margin: 0 0 6px;
+      font-size: 0.9rem;
+      color: var(--ink);
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 0.9rem;
+    }
+    li { margin-bottom: 4px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.89rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 700;
+    }
+    [contenteditable="true"] {
+      background: var(--accent-soft);
+      border-bottom: 1px dashed var(--accent);
+      padding: 1px 5px;
+      border-radius: 3px;
+      outline: none;
+    }
+    [contenteditable="true"]:focus {
+      background: #dbeafe;
+    }
+    .edit-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .sig-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.84em;
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .toolbar, .edit-note {
+        display: none !important;
+      }
+      .page {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      [contenteditable="true"] {
+        background: transparent !important;
+        border-bottom: none !important;
+        padding: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="toolbar-title">
+      Демо-панель для показа в деканате (голубые поля ниже можно отредактировать кликом перед печатью)
+    </div>
+    <div class="toolbar-actions">
+      <button type="button" class="btn primary" onclick="window.print()">🖨️ Распечатать / Сохранить в PDF</button>
+      <a class="btn" href="http://localhost:4174" target="_blank" rel="noopener">🎬 Трейлер (01:15 со звуком)</a>
+      <a class="btn" href="../ai_voice/web_recorder.html" target="_blank" rel="noopener">🎙️ Тест микрофона</a>
+      <a class="btn" href="https://github.com/Alizhan2/Game-x" target="_blank" rel="noopener">💻 GitHub команды</a>
+    </div>
+  </div>
+
+  <main class="page">
+    <header class="doc-header">
+      <div>
+        <div class="doc-kicker">Паспорт студенческого IT/AI-проекта • Обоснование для деканата</div>
+        <h1>Echoes of Arcana — Эхо магии</h1>
+        <p class="subtitle">3D Fantasy Action RPG с собственным офлайн-ИИ распознавания речи и адаптивным ИИ-соперником</p>
+      </div>
+      <div class="stamp">
+        <strong>Dungeon GameJam SU 2026</strong>
+        Satbayev University (г. Алматы)<br />
+        Даты: 3–6 декабря 2026 г.<br />
+        Призовой фонд: 2 700 000 ₸
+      </div>
+    </header>
+
+    <h2>1. Запрос и состав команды</h2>
+    <p>
+      Просим рассмотреть освобождение от учебных занятий с <strong>3 по 6 декабря 2026 года</strong> для участия команды
+      «<span contenteditable="true">Echoes Team (вписать название команды)</span>» в республиканском 48-часовом хакатоне
+      по разработке игр и ИИ <strong>Dungeon GameJam SU 2026</strong> (Satbayev University + LYSTRA, Алматы;
+      разработка: 3–5 декабря, очная защита перед жюри: 6 декабря).
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 34%;">ФИО студента</th>
+          <th style="width: 18%;">Группа / курс</th>
+          <th style="width: 48%;">Роль в проекте (GitHub)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span contenteditable="true">Участник 1 — Вписать ФИО</span></td>
+          <td><span contenteditable="true">Группа / курс</span></td>
+          <td>Voice AI, обучение CNN → ONNX в Google Colab, документация (<code>@Alizhan2</code>)</td>
+        </tr>
+        <tr>
+          <td><span contenteditable="true">Участник 2 — Вписать ФИО</span></td>
+          <td><span contenteditable="true">Группа / курс</span></td>
+          <td>Игровая логика на Godot 4.4.1 (3D), адаптивный ИИ босса, сборка <code>.exe</code> (<code>@marathanym</code>)</td>
+        </tr>
+        <tr>
+          <td><span contenteditable="true">Участник 3 — Вписать ФИО</span></td>
+          <td><span contenteditable="true">Группа / курс</span></td>
+          <td>3D-уровни и персонажи, D&amp;D-интерфейс, сюжет и звук (<code>@kultasbaubek-spec</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="edit-note">Подсказка: кликните по любому голубому полю в документе, впишите название команды, ФИО и группы, затем нажмите «Распечатать / Сохранить в PDF».</p>
+
+    <h2>2. Суть проекта и техническая архитектура</h2>
+    <p>
+      Игрок управляет 3D-персонажем в мире <em>«Башни Согласия»</em>, произнося слова древнего языка <em>Перворечи</em>
+      (<code>ВИРДАН</code>, <code>НОКТАР</code>, <code>ТАРГУМ</code>) прямо в микрофон. Громкость речи (шёпот или крик)
+      и чистота произношения меняют игровой эффект и модификатор кубика <code>d20</code>. Проект работает <strong>полностью
+      локально на Windows 10</strong> без интернета и облачных API (предусмотрено резервное управление с клавиатуры <code>1/2/3</code>).
+    </p>
+    <div class="grid-2">
+      <div class="box">
+        <h3>Двойной локальный ИИ</h3>
+        <ul>
+          <li><strong>Voice AI (PyTorch → ONNX):</strong> компактная 2D-CNN на log-Mel спектрограммах + <code>Silero VAD</code> (MIT) и адаптивный шумодав зала + UDP-мост <code>127.0.0.1:5055</code>.</li>
+          <li><strong>Живой ИИ-соперник (AdaptiveAI):</strong> анализирует паттерны заклинаний игрока в реальном времени, ставит контр-щит и адаптирует сложность (3 уровня + DDA).</li>
+        </ul>
+      </div>
+      <div class="box box-ok">
+        <h3>Фактическая готовность на 25 ноября 2026</h3>
+        <ul>
+          <li><strong>Открытый репозиторий:</strong> <code>github.com/Alizhan2/Game-x</code> (приняты 3 Pull Request: <code>#16</code>, <code>#17</code>, <code>#18</code>; распределены 19 задач).</li>
+          <li><strong>Модель ИИ обучена:</strong> <code>ai_voice/spell_model.onnx</code> (75.8 KB) на Tesla T4 GPU — <strong>91.67%</strong> точности на невидимых тестовых клипах.</li>
+          <li><strong>Автотесты и движок:</strong> интеграция с <strong>Godot 4.4.1</strong>, пройдены автотесты Python.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>3. Академическая и практическая ценность участия</h2>
+    <ul>
+      <li><strong>Машинное обучение и цифровая обработка сигналов:</strong> сбор аудиодатасета, аугментация, обучение сверточной нейросети и оптимизация инференса через ONNX Runtime.</li>
+      <li><strong>Программная и 3D-инженерия:</strong> кросс-платформенная архитектура (Python + Godot 4.4.1 / GDScript), распределённая командная работа через GitHub (ветки, код-ревью, CI/тесты).</li>
+      <li><strong>Представительство университета:</strong> команда подготовлена заранее (с соблюдением правила фестиваля ≤ 50% предзаготовок до старта 3 декабря) и готова побороться за призовые места.</li>
+    </ul>
+
+    <div class="sig-row">
+      <span>Репозиторий проекта: <strong>https://github.com/Alizhan2/Game-x</strong></span>
+      <span>Дата формирования: <strong>25.11.2026</strong></span>
+    </div>
+  </main>
+</body>
+</html>
