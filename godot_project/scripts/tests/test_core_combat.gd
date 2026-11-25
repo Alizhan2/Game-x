@@ -35,6 +35,7 @@ func _run() -> void:
 	var arena := (load("res://scripts/tests/combat_trial.tscn") as PackedScene).instantiate()
 	root.add_child(arena)
 	current_scene = arena
+	arena.get_node("CanvasLayer/TowerMenu").get_node("%Begin").pressed.emit()
 	arena.get_node("LevelManager").jump_to_boss_for_jury()
 	await physics_frame
 	await physics_frame

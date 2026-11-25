@@ -112,7 +112,7 @@ func _cast_combo(spell: String) -> void:
 	remove_from_group(&"combat_guards")
 	_status.hide()
 	ward_broken.emit()
-	objective_changed.emit("Печать снята. Произнеси любое заклинание (1/2/3), чтобы вернуть магию. Или молчи пять секунд у микрофона либо удерживай 0.")
+	objective_changed.emit("Комбо сработало — 3/3! Печать снята. Произнеси любое заклинание (1/2/3), чтобы вернуть магию. Или молчи пять секунд у микрофона либо удерживай 0.")
 
 
 func _show_combo() -> void:

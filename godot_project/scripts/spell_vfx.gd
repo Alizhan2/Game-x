@@ -63,6 +63,15 @@ static func _spawn_burst_particles(root: Node3D, color: Color, amount: int, spee
 	particles.emitting = true
 
 
+static func spawn_shield_sparks(caster: Node3D) -> void:
+	if _is_headless():
+		return
+	var burst := Node3D.new()
+	caster.add_child(burst)
+	_spawn_burst_particles(burst, Color(1.0, 0.68, 0.25), 28, 2.6, 145.0)
+	burst.get_child(0).finished.connect(burst.queue_free)
+
+
 static func spawn_virdan_roots(parent: Node, pos: Vector3, strength: float = 1.0) -> void:
 	if parent == null:
 		return
@@ -116,6 +125,10 @@ static func spawn_noktar_wave(parent: Node, pos: Vector3, radius: float = 10.0, 
 	root.add_child(ring)
 
 	_spawn_burst_particles(root, wave_color, 16, 2.8, 85.0)
+	if not _is_headless():
+		var mist := preload("res://scenes/floors/noktar_mist.tscn").instantiate() as GPUParticles3D
+		root.add_child(mist)
+		mist.emitting = true
 
 	var tw := root.create_tween()
 	tw.set_parallel(true)

@@ -100,7 +100,7 @@ func receive_strike(base_damage: int) -> int:
 	var damage := base_damage * 2 if exposed_for > 0.0 else base_damage
 	exposed_for = 0.0
 	health = maxi(0, health - damage)
-	_play_clip([&"Hit_A", &"Hit"], 0.35)
+	_play_clip([&"RecieveHit", &"Hit_A", &"Hit"], 0.35)
 	if health == 0:
 		_on_defeated()
 	_update_status()
@@ -171,7 +171,7 @@ func _track_player(player: ArcanaPlayer, delta: float) -> bool:
 		_casting_beam = _should_cast_beam(distance)
 		_windup = WINDUP
 		_play_clip(
-			[&"Spellcast_Shoot", &"Cast", &"CharacterArmature|Shoot"] if _casting_beam else [&"1H_Melee_Attack_Slice_Diagonal", &"Attack", &"CharacterArmature|Attack"],
+			[&"Spell1", &"Sword_Attack2", &"Spellcast_Shoot", &"Cast", &"CharacterArmature|Shoot"] if _casting_beam else [&"Sword_Attack", &"Staff_Attack", &"1H_Melee_Attack_Slice_Diagonal", &"Attack", &"CharacterArmature|Attack"],
 			0.55
 		)
 		return false

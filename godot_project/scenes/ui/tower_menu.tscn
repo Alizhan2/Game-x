@@ -1,0 +1,71 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/tower_menu.gd" id="1_menu"]
+[ext_resource type="Theme" path="res://scenes/ui/arcana_theme.tres" id="2_theme"]
+
+[node name="TowerMenu" type="ColorRect"]
+process_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.018, 0.014, 0.024, 0.77)
+theme = ExtResource("2_theme")
+script = ExtResource("1_menu")
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Frame" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(440, 0)
+
+[node name="Setup" type="VBoxContainer" parent="Center/Frame"]
+unique_name_in_owner = true
+theme_override_constants/separation = 12
+
+[node name="Book" type="VBoxContainer" parent="Center/Frame"]
+unique_name_in_owner = true
+visible = false
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Center/Frame/Setup"]
+text = "Эхо магии"
+theme_type_variation = &"Title"
+
+[node name="DifficultyLabel" type="Label" parent="Center/Frame/Setup"]
+text = "Сложность"
+autowrap_mode = 3
+
+[node name="Difficulty" type="OptionButton" parent="Center/Frame/Setup"]
+unique_name_in_owner = true
+
+[node name="PushToTalk" type="CheckButton" parent="Center/Frame/Setup"]
+unique_name_in_owner = true
+text = "Говорить при удержании V"
+
+[node name="Begin" type="Button" parent="Center/Frame/Setup"]
+unique_name_in_owner = true
+text = "Войти в башню"
+
+[node name="Title" type="Label" parent="Center/Frame/Book"]
+text = "Гримуар Миры"
+theme_type_variation = &"Title"
+
+[node name="Spells" type="Label" parent="Center/Frame/Book"]
+text = "Вирдан   ·   1\nКорни удерживают стража.\n\nНоктар   ·   2\nОткрывает тайники. Шёпот скрывает тебя.\n\nТаргум   ·   3\nЩит отражает луч Хранителя."
+autowrap_mode = 3
+
+[node name="Rule" type="HSeparator" parent="Center/Frame/Book"]
+
+
+[node name="NoteTitle" type="Label" parent="Center/Frame/Book"]
+text = "Запись Миры"
+theme_type_variation = &"Title"
+
+[node name="Note" type="Label" parent="Center/Frame/Book"]
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="CloseBook" type="Button" parent="Center/Frame/Book"]
+unique_name_in_owner = true
+text = "Закрыть гримуар   ·   Tab"

@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Rune"]
+shading_mode = 0
+albedo_color = Color(1, 0.75, 0.42, 1)
+emission_enabled = true
+emission = Color(0.82, 0.43, 0.12, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="PrismMesh" id="Shard"]
+size = Vector3(0.045, 0.14, 0.025)
+material = SubResource("Rune")
+
+[sub_resource type="ParticleProcessMaterial" id="Flow"]
+emission_shape = 3
+emission_box_extents = Vector3(1.5, 0.12, 0.16)
+direction = Vector3(0, 1, 0)
+spread = 12.0
+initial_velocity_min = 0.6
+initial_velocity_max = 1.5
+gravity = Vector3(0, 0.12, 0)
+scale_min = 0.5
+scale_max = 1.1
+
+[node name="WardRunes" type="GPUParticles3D"]
+amount = 24
+lifetime = 2.0
+preprocess = 2.0
+visibility_aabb = AABB(-3, -1, -1, 6, 6, 2)
+cast_shadow = 0
+process_material = SubResource("Flow")
+draw_pass_1 = SubResource("Shard")

@@ -14,6 +14,7 @@ var _active_floor: TowerFloor
 func _ready() -> void:
 	_manager.level_loaded.connect(_on_level_loaded)
 	GameState.ending_reached.connect(_on_ending_reached)
+	VoiceReceiver.silence_updated.connect(_on_silence_updated)
 	var floor_index := _manager.current_floor_index
 	_on_level_loaded(floor_index, str(LevelManager.FLOORS[floor_index - 1]["title"]))
 
@@ -34,6 +35,11 @@ func _on_level_loaded(_floor_index: int, title: String) -> void:
 	_objective.text = _active_floor.objective_initial
 	_active_floor.objective_changed.connect(_on_objective_changed)
 	_active_floor.exit_requested.connect(_on_exit_requested)
+
+func _on_silence_updated(seconds: float) -> void:
+	var progress := clampf(seconds, 0.0, 5.0)
+	$CanvasLayer/HudPanel/VBox/Silence.value = progress
+	$CanvasLayer/HudPanel/VBox/SilenceLabel.text = "Тишина  %.1f / 5 с     ·     0 удерживать     ·     Tab гримуар" % progress
 
 func _on_objective_changed(text: String) -> void:
 	_objective.text = text

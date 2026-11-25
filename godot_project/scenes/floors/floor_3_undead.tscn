@@ -7,8 +7,8 @@
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_gated.glb" id="gate"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_arched.glb" id="arch"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/pillar_decorated.glb" id="pillar"]
-[ext_resource type="PackedScene" path="res://assets/models/kaykit_skeletons/Skeleton_Warrior.glb" id="skeleton"]
-[ext_resource type="PackedScene" path="res://assets/models/quaternius/ghost_skull.glb" id="ghost"]
+[ext_resource type="PackedScene" path="res://assets/models/arcana/revenant.glb" id="skeleton"]
+[ext_resource type="PackedScene" path="res://assets/models/arcana/revenant.glb" id="ghost"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/shelf_small_candles.glb" id="candles"]
 
 [sub_resource type="BoxShape3D" id="FloorShape"]
@@ -414,4 +414,4 @@ detection_radius = 10.5
 requires_exposure = true
 
 [node name="Model" parent="CryptGuardian" instance=ExtResource("skeleton")]
-scale = Vector3(0.95, 0.95, 0.95)
+scale = Vector3(0.68, 0.68, 0.68)

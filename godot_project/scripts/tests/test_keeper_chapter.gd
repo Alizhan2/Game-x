@@ -150,6 +150,7 @@ func _run() -> void:
 	var arena := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(arena)
 	current_scene = arena
+	arena.get_node("CanvasLayer/TowerMenu").get_node("%Begin").pressed.emit()
 	manager = arena.get_node("LevelManager")
 	player = arena.get_node("Player")
 	game = root.get_node("GameState")

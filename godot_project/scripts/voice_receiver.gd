@@ -19,6 +19,7 @@ var _hold_started_msec := -1
 var _reported_silence_sec: float = 0.0
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var err := _udp.bind(UDP_PORT, "127.0.0.1")
 	if err != OK:
 		push_warning("VoiceReceiver: UDP bind failed on port %d; keyboard fallback [1/2/3] active." % UDP_PORT)
@@ -38,6 +39,13 @@ func _exit_tree() -> void:
 		OS.kill(_engine_pid)
 
 func _process(_delta: float) -> void:
+	if get_tree().paused:
+		# Discard speech captured while a menu was open.
+		while _udp.get_available_packet_count() > 0:
+			_udp.get_packet()
+		_hold_started_msec = -1
+		_voice_silence_sec = 0.0
+		return
 	_poll_udp()
 	_handle_keyboard_fallback()
 
