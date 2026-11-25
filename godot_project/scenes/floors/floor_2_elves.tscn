@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="1_tower_floor"]
 [ext_resource type="Script" path="res://scripts/combat_guard.gd" id="guard_script"]
-[ext_resource type="PackedScene" path="res://assets/models/kaykit_adventurers/Rogue_Hooded.glb" id="rogue_model"]
+[ext_resource type="PackedScene" path="res://assets/models/arcana/warden.glb" id="rogue_model"]
 
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/floor_tile_large.glb" id="kit_floor_tile_large"]
 
@@ -492,4 +492,4 @@ approach_speed = 2.3
 detection_radius = 11.0
 
 [node name="Model" parent="ElvenWarden" instance=ExtResource("rogue_model")]
-scale = Vector3(0.95, 0.95, 0.95)
+scale = Vector3(0.69, 0.69, 0.69)

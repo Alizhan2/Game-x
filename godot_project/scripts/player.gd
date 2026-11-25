@@ -106,7 +106,7 @@ func _physics_process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if DisplayServer.get_name() != "headless" and event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_TAB:
+		if event.keycode == KEY_ESCAPE:
 			var next_mode := Input.MOUSE_MODE_VISIBLE if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
 			Input.set_mouse_mode(next_mode)
 			return
@@ -138,10 +138,9 @@ func _update_status() -> void:
 	_shield.visible = shield_left > 0.0
 	if hud_status_label == null:
 		return
-	var parts := PackedStringArray(["Голос и клавиши" if _engine_connected else "Клавиши 1/2/3 · Shift — шёпот · Мышь — камера", "ОЗ %d/%d" % [health, MAX_HEALTH]])
+	var parts := PackedStringArray([("Голос по V · клавиши 1/2/3" if VoiceReceiver.push_to_talk_enabled else "Голос и клавиши") if _engine_connected else "Клавиши 1/2/3 · Shift — шёпот · Мышь — камера", "ОЗ %d/%d" % [health, MAX_HEALTH]])
 	parts.append("%s (F1–F3)" % AdaptiveAI.get_difficulty_label())
-	if AdaptiveAI.active_counter_spell != "":
-		parts.append("Контр-щит: " + AdaptiveAI.active_counter_spell.to_upper())
+	parts.append("Контр-щит: " + (AdaptiveAI.active_counter_spell.to_upper() if AdaptiveAI.active_counter_spell else "неактивен"))
 	if shield_left > 0.0:
 		parts.append("ЩИТ")
 	if stealth_left > 0.0:
@@ -153,7 +152,7 @@ func _update_status() -> void:
 
 func _trigger_cast_anim() -> void:
 	if _visual != null and _visual.has_method("play_action"):
-		_visual.play_action([&"Spellcast_Shoot", &"Cast", &"Spell_Cast"], 0.45)
+		_visual.play_action([&"Spell1", &"Spellcast_Shoot", &"Cast", &"Spell_Cast"], 0.45)
 
 
 func _on_spell_heard(spell: String, confidence: float, volume: float, d20: Dictionary, is_whisper: bool) -> void:
@@ -203,6 +202,7 @@ func _on_spell_heard(spell: String, confidence: float, volume: float, d20: Dicti
 			_SpellVFX.play_sfx(self, "res://assets/audio/spells/noktar.ogg")
 			_trigger_cast_anim()
 		"targum":
+			_SpellVFX.spawn_shield_sparks(self)
 			shield_left = maxf(shield_left, (2.5 + volume) * strength)
 			_SpellVFX.play_sfx(self, "res://assets/audio/spells/targum.ogg")
 			_trigger_cast_anim()
@@ -238,7 +238,7 @@ func _melee_attack() -> void:
 	var fx_parent := get_parent() if get_parent() != null else self
 	var slash_yaw: float = _visual.rotation.y + PI if _visual != null else _camera_yaw
 	if _visual != null and _visual.has_method("play_action"):
-		_visual.play_action([&"1H_Melee_Attack_Slice_Diagonal", &"Attack", &"Melee"], 0.35)
+		_visual.play_action([&"1H_Melee_Attack_Slice_Diagonal", &"Attack", &"Melee", &"Staff_Attack"], 0.35)
 	_SpellVFX.play_sfx(self, "res://assets/audio/kenney_rpg/chop.ogg")
 
 	var nearest: CombatGuard
@@ -279,7 +279,7 @@ func take_hit(amount: int, beam: bool) -> bool:
 		_last_hit = "%s −%d ОЗ" % [attack, amount]
 		_add_shake(0.24)
 		if _visual != null and _visual.has_method("play_action"):
-			_visual.play_action([&"Hit_A", &"Hit"], 0.35)
+			_visual.play_action([&"RecieveHit", &"Hit_A", &"Hit"], 0.35)
 		if health == 0:
 			global_position = _spawn_position
 			velocity = Vector3.ZERO

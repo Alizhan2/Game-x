@@ -42,7 +42,7 @@ func fire_beam(attacker) -> void:
 	attacker._physics_process(1.3)
 
 func _run() -> void:
-	var arena := (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	var arena := (load("res://scripts/tests/combat_trial.tscn") as PackedScene).instantiate()
 	root.add_child(arena)
 	current_scene = arena
 	await physics_frame

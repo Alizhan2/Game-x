@@ -18,6 +18,7 @@ var _exit_pending: bool = false
 
 func _ready() -> void:
 	if _gate != null:
+		_gate.add_child(preload("res://scenes/floors/gate_motes.tscn").instantiate())
 		VoiceReceiver.spell_heard.connect(_on_spell_heard)
 	if _exit != null:
 		_exit.body_entered.connect(_on_exit_body_entered)

@@ -1,8 +1,8 @@
 [gd_scene load_steps=23 format=3]
 
-[ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="1_floor"]
+[ext_resource type="Script" path="res://scenes/floors/summit_floor.gd" id="1_floor"]
 [ext_resource type="Script" path="res://scripts/keeper_boss.gd" id="2_keeper"]
-[ext_resource type="PackedScene" path="res://assets/models/quaternius/robot_enemy.glb" id="3_robot"]
+[ext_resource type="PackedScene" path="res://assets/models/arcana/archon.glb" id="3_robot"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/pillar_decorated.glb" id="4_pillar"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_arched.glb" id="5_arch"]
 
@@ -252,7 +252,7 @@ position = Vector3(0, 0.12, -9.3)
 script = ExtResource("2_keeper")
 
 [node name="Model" parent="KeeperBoss" instance=ExtResource("3_robot")]
-scale = Vector3(5.8, 5.8, 5.8)
+scale = Vector3(1.8, 1.8, 1.8)
 
 [node name="KeeperName" type="Label3D" parent="KeeperBoss"]
 position = Vector3(0, 5.15, 0)

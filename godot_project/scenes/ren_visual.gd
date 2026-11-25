@@ -1,7 +1,7 @@
 extends Node3D
 
 const IDLE: StringName = &"Idle"
-const RUN: StringName = &"Running_A"
+const RUN: StringName = &"Run"
 
 @onready var _player: CharacterBody3D = get_parent() as CharacterBody3D
 @onready var _animation: AnimationPlayer = find_child("AnimationPlayer", true, false) as AnimationPlayer
