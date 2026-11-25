@@ -8,11 +8,25 @@
 
 [sub_resource type="Environment" id="Environment_summit"]
 background_mode = 1
-background_color = Color(0.065, 0.043, 0.09, 1)
+background_color = Color(0.03, 0.016, 0.042, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.72, 0.51, 0.43, 1)
-ambient_light_energy = 0.58
+ambient_light_color = Color(0.42, 0.24, 0.22, 1)
+ambient_light_energy = 0.15
+tonemap_mode = 3
+tonemap_exposure = 1.06
+ssao_enabled = true
+ssao_radius = 1.3
+ssao_intensity = 2.4
 glow_enabled = true
+glow_intensity = 1.0
+glow_bloom = 0.34
+glow_hdr_threshold = 0.85
+fog_enabled = true
+fog_light_color = Color(0.11, 0.05, 0.09, 1)
+fog_density = 0.032
+adjustment_enabled = true
+adjustment_contrast = 1.18
+adjustment_saturation = 0.84
 
 [sub_resource type="StandardMaterial3D" id="Material_basalt"]
 albedo_color = Color(0.12, 0.081, 0.085, 1)
@@ -99,8 +113,8 @@ environment = SubResource("Environment_summit")
 
 [node name="Dusk" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-50, -30, 0)
-light_color = Color(1, 0.66, 0.43, 1)
-light_energy = 0.8
+light_color = Color(0.95, 0.48, 0.28, 1)
+light_energy = 0.34
 shadow_enabled = true
 
 [node name="FoundryLight" type="OmniLight3D" parent="."]

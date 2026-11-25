@@ -67,11 +67,26 @@ size = Vector3(1.63, 4, 1.54)
 
 [sub_resource type="Environment" id="ElvenEnvironment"]
 background_mode = 1
-background_color = Color(0.08, 0.17, 0.14, 1)
+background_color = Color(0.02, 0.055, 0.045, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.58, 0.78, 0.65, 1)
-ambient_light_energy = 0.64
+ambient_light_color = Color(0.26, 0.45, 0.34, 1)
+ambient_light_energy = 0.16
 reflected_light_source = 1
+tonemap_mode = 3
+tonemap_exposure = 1.05
+ssao_enabled = true
+ssao_radius = 1.2
+ssao_intensity = 2.2
+glow_enabled = true
+glow_intensity = 0.9
+glow_bloom = 0.3
+glow_hdr_threshold = 0.88
+fog_enabled = true
+fog_light_color = Color(0.05, 0.14, 0.1, 1)
+fog_density = 0.038
+adjustment_enabled = true
+adjustment_contrast = 1.16
+adjustment_saturation = 0.82
 
 [node name="Floor2Elves" type="Node3D"]
 script = ExtResource("1_tower_floor")
@@ -84,8 +99,8 @@ environment = SubResource("ElvenEnvironment")
 
 [node name="Sunlight" type="DirectionalLight3D" parent="."]
 rotation = Vector3(-1.08, 0.45, 0)
-light_color = Color(1, 0.93, 0.74, 1)
-light_energy = 0.9
+light_color = Color(0.68, 0.88, 0.72, 1)
+light_energy = 0.36
 shadow_enabled = true
 directional_shadow_max_distance = 42.0
 
