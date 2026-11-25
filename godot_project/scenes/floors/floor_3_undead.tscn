@@ -1,0 +1,393 @@
+[gd_scene load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="floor_script"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/floor_tile_large.glb" id="tile"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall.glb" id="wall"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_gated.glb" id="gate"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_arched.glb" id="arch"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/pillar_decorated.glb" id="pillar"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_skeletons/Skeleton_Warrior.glb" id="skeleton"]
+[ext_resource type="PackedScene" path="res://assets/models/quaternius/ghost_skull.glb" id="ghost"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/shelf_small_candles.glb" id="candles"]
+
+[sub_resource type="BoxShape3D" id="FloorShape"]
+size = Vector3(12, 0.5, 24)
+
+[sub_resource type="BoxShape3D" id="SideShape"]
+size = Vector3(1, 4, 25)
+
+[sub_resource type="BoxShape3D" id="EndShape"]
+size = Vector3(14, 4, 1)
+
+[sub_resource type="BoxShape3D" id="PartitionShape"]
+size = Vector3(4, 4, 1)
+
+[sub_resource type="BoxShape3D" id="ExitShape"]
+size = Vector3(3.1, 2.6, 1.2)
+
+[sub_resource type="BoxShape3D" id="PedestalShape"]
+size = Vector3(1.9, 0.46, 1.9)
+
+[sub_resource type="BoxShape3D" id="PillarShape"]
+size = Vector3(1.7, 3.12, 1.35)
+
+[sub_resource type="StandardMaterial3D" id="PedestalMaterial"]
+albedo_color = Color(0.14, 0.13, 0.23, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="PedestalMesh"]
+material = SubResource("PedestalMaterial")
+size = Vector3(1.9, 0.46, 1.9)
+
+[sub_resource type="StandardMaterial3D" id="MemoryRuneMaterial"]
+shading_mode = 0
+albedo_color = Color(0.35, 0.84, 1, 1)
+emission_enabled = true
+emission = Color(0.14, 0.48, 0.9, 1)
+
+[sub_resource type="BoxMesh" id="MemoryRuneMesh"]
+material = SubResource("MemoryRuneMaterial")
+size = Vector3(0.52, 0.035, 0.52)
+
+[sub_resource type="Environment" id="CryptEnvironment"]
+background_mode = 1
+background_color = Color(0.025, 0.021, 0.055, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.49, 0.53, 0.86, 1)
+ambient_light_energy = 0.42
+fog_enabled = true
+fog_light_color = Color(0.13, 0.13, 0.25, 1)
+fog_density = 0.012
+
+[node name="Floor3CryptOfMemory" type="Node3D"]
+script = ExtResource("floor_script")
+objective_initial = "Подойди к решётке и прошепчи «Ноктар» (Shift + 2)."
+objective_cleared = "Иди по светящимся рунам к арке выхода."
+required_spell = "noktar"
+requires_whisper = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("CryptEnvironment")
+
+[node name="SpawnPoint" type="Marker3D" parent="."]
+position = Vector3(0, 0.85, 8)
+
+[node name="Structure" type="Node3D" parent="."]
+
+[node name="WalkableFloor" type="StaticBody3D" parent="Structure"]
+position = Vector3(0, -0.25, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/WalkableFloor"]
+shape = SubResource("FloorShape")
+
+[node name="WestWall" type="StaticBody3D" parent="Structure"]
+position = Vector3(-6.5, 2, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/WestWall"]
+shape = SubResource("SideShape")
+
+[node name="EastWall" type="StaticBody3D" parent="Structure"]
+position = Vector3(6.5, 2, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/EastWall"]
+shape = SubResource("SideShape")
+
+[node name="EntryWall" type="StaticBody3D" parent="Structure"]
+position = Vector3(0, 2, 10.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/EntryWall"]
+shape = SubResource("EndShape")
+
+[node name="RearWall" type="StaticBody3D" parent="Structure"]
+position = Vector3(0, 2, -14.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/RearWall"]
+shape = SubResource("EndShape")
+
+[node name="WestPartition" type="StaticBody3D" parent="Structure"]
+position = Vector3(-4, 2, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/WestPartition"]
+shape = SubResource("PartitionShape")
+
+[node name="EastPartition" type="StaticBody3D" parent="Structure"]
+position = Vector3(4, 2, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/EastPartition"]
+shape = SubResource("PartitionShape")
+
+[node name="StoneFloor" type="Node3D" parent="."]
+
+[node name="Tile1_1" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(-4, -0.055, 8)
+
+[node name="Tile1_2" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(0, -0.055, 8)
+
+[node name="Tile1_3" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(4, -0.055, 8)
+
+[node name="Tile2_1" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(-4, -0.055, 4)
+
+[node name="Tile2_2" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(0, -0.055, 4)
+
+[node name="Tile2_3" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(4, -0.055, 4)
+
+[node name="Tile3_1" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(-4, -0.055, 0)
+
+[node name="Tile3_2" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(0, -0.055, 0)
+
+[node name="Tile3_3" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(4, -0.055, 0)
+
+[node name="Tile4_1" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(-4, -0.055, -4)
+
+[node name="Tile4_2" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(0, -0.055, -4)
+
+[node name="Tile4_3" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(4, -0.055, -4)
+
+[node name="Tile5_1" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(-4, -0.055, -8)
+
+[node name="Tile5_2" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(0, -0.055, -8)
+
+[node name="Tile5_3" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(4, -0.055, -8)
+
+[node name="Tile6_1" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(-4, -0.055, -12)
+
+[node name="Tile6_2" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(0, -0.055, -12)
+
+[node name="Tile6_3" parent="StoneFloor" instance=ExtResource("tile")]
+position = Vector3(4, -0.055, -12)
+
+[node name="Masonry" type="Node3D" parent="."]
+
+[node name="West1" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-6.5, 0, 8)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="West2" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-6.5, 0, 4)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="West3" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-6.5, 0, 0)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="West4" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-6.5, 0, -4)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="West5" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-6.5, 0, -8)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="West6" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-6.5, 0, -12)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="East1" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(6.5, 0, 8)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="East2" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(6.5, 0, 4)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="East3" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(6.5, 0, 0)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="East4" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(6.5, 0, -4)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="East5" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(6.5, 0, -8)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="East6" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(6.5, 0, -12)
+rotation = Vector3(0, -1.5707963, 0)
+
+[node name="Entrance1" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-4, 0, 10.5)
+scale = Vector3(1, 0.18, 1)
+
+[node name="Back1" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-4, 0, -14.5)
+
+[node name="Entrance2" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(0, 0, 10.5)
+scale = Vector3(1, 0.18, 1)
+
+[node name="Back2" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(0, 0, -14.5)
+
+[node name="Entrance3" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(4, 0, 10.5)
+scale = Vector3(1, 0.18, 1)
+
+[node name="Back3" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(4, 0, -14.5)
+
+[node name="WestPartition" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(-4, 0, 0)
+
+[node name="EastPartition" parent="Masonry" instance=ExtResource("wall")]
+position = Vector3(4, 0, 0)
+
+[node name="SpellGate" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SpellGate"]
+position = Vector3(0, 2, 0)
+shape = SubResource("PartitionShape")
+
+[node name="Grate" parent="SpellGate" instance=ExtResource("gate")]
+
+[node name="WhisperInscription" type="Label3D" parent="SpellGate"]
+position = Vector3(0, 2.75, 0.66)
+text = "НОКТАР ШЁПОТОМ\nSHIFT + 2"
+modulate = Color(0.81, 0.87, 1, 1)
+outline_modulate = Color(0.06, 0.035, 0.11, 1)
+font_size = 52
+outline_size = 12
+pixel_size = 0.008
+
+[node name="Alcoves" type="Node3D" parent="."]
+
+[node name="WestColumn" type="StaticBody3D" parent="Alcoves"]
+position = Vector3(-4.3, 0, 3.25)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Alcoves/WestColumn"]
+position = Vector3(0, 1.56, 0)
+shape = SubResource("PillarShape")
+
+[node name="Stone" parent="Alcoves/WestColumn" instance=ExtResource("pillar")]
+scale = Vector3(0.78, 0.78, 0.78)
+
+[node name="WestCandles" parent="Alcoves" instance=ExtResource("candles")]
+position = Vector3(-4.3, 0, -11)
+
+[node name="EastColumn" type="StaticBody3D" parent="Alcoves"]
+position = Vector3(4.3, 0, 3.25)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Alcoves/EastColumn"]
+position = Vector3(0, 1.56, 0)
+shape = SubResource("PillarShape")
+
+[node name="Stone" parent="Alcoves/EastColumn" instance=ExtResource("pillar")]
+scale = Vector3(0.78, 0.78, 0.78)
+
+[node name="EastCandles" parent="Alcoves" instance=ExtResource("candles")]
+position = Vector3(4.3, 0, -11)
+
+[node name="WarriorPedestal" type="StaticBody3D" parent="Alcoves"]
+position = Vector3(-4, 0.23, -7.8)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Alcoves/WarriorPedestal"]
+shape = SubResource("PedestalShape")
+
+[node name="Stone" type="MeshInstance3D" parent="Alcoves/WarriorPedestal"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("PedestalMesh")
+
+[node name="RitualSentinel" parent="Alcoves/WarriorPedestal" instance=ExtResource("skeleton")]
+position = Vector3(0, 0.23, 0)
+rotation = Vector3(0, 0.5, 0)
+scale = Vector3(0.8, 0.8, 0.8)
+
+[node name="Lighting" type="Node3D" parent="."]
+
+[node name="VioletEntrance" type="OmniLight3D" parent="Lighting"]
+position = Vector3(0, 4.25, 6.2)
+light_color = Color(0.67, 0.44, 1, 1)
+light_energy = 2.5
+omni_range = 8.5
+omni_attenuation = 0.9
+
+[node name="IndigoThreshold" type="OmniLight3D" parent="Lighting"]
+position = Vector3(0, 3.1, 1.4)
+light_color = Color(0.46, 0.55, 1, 1)
+light_energy = 1.8
+omni_range = 6.2
+omni_attenuation = 0.9
+
+[node name="AzureVault" type="OmniLight3D" parent="Lighting"]
+position = Vector3(0, 4.15, -7.6)
+light_color = Color(0.42, 0.67, 1, 1)
+light_energy = 2.1
+omni_range = 9.6
+omni_attenuation = 0.9
+
+[node name="WarriorNiche" type="OmniLight3D" parent="Lighting"]
+position = Vector3(-4, 2.5, -6.2)
+light_color = Color(0.72, 0.46, 1, 1)
+light_energy = 1.2
+omni_range = 4.1
+omni_attenuation = 0.9
+
+[node name="Secret" type="Node3D" parent="."]
+visible = false
+
+[node name="MemorySpirit" parent="Secret" instance=ExtResource("ghost")]
+position = Vector3(2.8, 0.95, -3.6)
+rotation = Vector3(0, -0.55, 0)
+scale = Vector3(0.58, 0.58, 0.58)
+
+[node name="Rune1" type="MeshInstance3D" parent="Secret"]
+position = Vector3(0, 0.025, -2.8)
+mesh = SubResource("MemoryRuneMesh")
+rotation = Vector3(0, 0.7853982, 0)
+
+[node name="Rune2" type="MeshInstance3D" parent="Secret"]
+position = Vector3(0, 0.025, -5)
+mesh = SubResource("MemoryRuneMesh")
+rotation = Vector3(0, 0.7853982, 0)
+
+[node name="Rune3" type="MeshInstance3D" parent="Secret"]
+position = Vector3(0, 0.025, -7.2)
+mesh = SubResource("MemoryRuneMesh")
+rotation = Vector3(0, 0.7853982, 0)
+
+[node name="Rune4" type="MeshInstance3D" parent="Secret"]
+position = Vector3(0, 0.025, -9.4)
+mesh = SubResource("MemoryRuneMesh")
+rotation = Vector3(0, 0.7853982, 0)
+
+[node name="Rune5" type="MeshInstance3D" parent="Secret"]
+position = Vector3(0, 0.025, -11.1)
+mesh = SubResource("MemoryRuneMesh")
+rotation = Vector3(0, 0.7853982, 0)
+
+[node name="AscentSign" type="Label3D" parent="Secret"]
+position = Vector3(0, 2.65, -11.85)
+text = "К ВЕРШИНЕ БАШНИ"
+modulate = Color(0.66, 0.89, 1, 1)
+outline_modulate = Color(0.035, 0.075, 0.15, 1)
+font_size = 48
+outline_size = 12
+pixel_size = 0.009
+
+[node name="AscentArch" parent="." instance=ExtResource("arch")]
+position = Vector3(0, 0, -12.55)
+
+[node name="Exit" type="Area3D" parent="."]
+position = Vector3(0, 1.3, -12.7)
+collision_layer = 0
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Exit"]
+shape = SubResource("ExitShape")

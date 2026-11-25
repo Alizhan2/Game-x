@@ -1,0 +1,468 @@
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="1_tower_floor"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/floor_tile_large.glb" id="kit_floor_tile_large"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/floor_tile_small_weeds_A.glb" id="kit_floor_tile_small_weeds_A"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall.glb" id="kit_wall"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_arched.glb" id="kit_wall_arched"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_gated.glb" id="kit_wall_gated"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/banner_green.glb" id="kit_banner_green"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/banner_yellow.glb" id="kit_banner_yellow"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/pillar_decorated.glb" id="kit_pillar_decorated"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/torch_lit.glb" id="kit_torch_lit"]
+
+[sub_resource type="BoxShape3D" id="RoomFloor"]
+size = Vector3(16, 0.4, 28)
+
+[sub_resource type="BoxShape3D" id="SideWall"]
+size = Vector3(1, 4, 30)
+
+[sub_resource type="BoxShape3D" id="EndWall"]
+size = Vector3(18, 4, 1)
+
+[sub_resource type="BoxShape3D" id="ExitVolume"]
+size = Vector3(2.8, 2.6, 1.25)
+
+[sub_resource type="BoxShape3D" id="PartitionWall"]
+size = Vector3(6.1, 4, 1.0)
+
+[sub_resource type="BoxShape3D" id="GateCollision"]
+size = Vector3(4, 4, 1.0)
+
+[sub_resource type="StandardMaterial3D" id="GateRune_mat"]
+albedo_color = Color(0.54, 1, 0.72, 1)
+emission_enabled = true
+emission = Color(0.22, 0.9, 0.41, 1)
+emission_energy_multiplier = 1.35
+
+[sub_resource type="TorusMesh" id="GateRune_mesh"]
+inner_radius = 0.28
+outer_radius = 0.4
+rings = 24
+ring_segments = 8
+material = SubResource("GateRune_mat")
+
+[sub_resource type="StandardMaterial3D" id="GoldInlay_mat"]
+albedo_color = Color(0.68, 0.51, 0.17, 1)
+roughness = 0.72
+emission_enabled = true
+emission = Color(0.28, 0.19, 0.04, 1)
+emission_energy_multiplier = 0.7
+
+[sub_resource type="BoxMesh" id="GoldInlay_mesh"]
+size = Vector3(0.055, 0.024, 10.8)
+material = SubResource("GoldInlay_mat")
+
+[sub_resource type="BoxShape3D" id="PillarCollision"]
+size = Vector3(1.63, 4, 1.54)
+
+[sub_resource type="Environment" id="ElvenEnvironment"]
+background_mode = 1
+background_color = Color(0.08, 0.17, 0.14, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.58, 0.78, 0.65, 1)
+ambient_light_energy = 0.64
+reflected_light_source = 1
+
+[node name="Floor2Elves" type="Node3D"]
+script = ExtResource("1_tower_floor")
+objective_initial = "Подойди к зелёной решётке и произнеси «Вирдан» или нажми 1."
+objective_cleared = "Решётка открыта. Пройди к арке Склепа Памяти."
+required_spell = "virdan"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("ElvenEnvironment")
+
+[node name="Sunlight" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-1.08, 0.45, 0)
+light_color = Color(1, 0.93, 0.74, 1)
+light_energy = 0.9
+shadow_enabled = true
+directional_shadow_max_distance = 42.0
+
+[node name="SpawnPoint" type="Marker3D" parent="."]
+position = Vector3(0, 0.85, 9)
+
+[node name="Geometry" type="Node3D" parent="."]
+
+[node name="Tiles" type="Node3D" parent="Geometry"]
+
+[node name="Tile1_1" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-6, -0.05, -12)
+
+[node name="Tile1_2" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-6, -0.05, -8)
+
+[node name="Tile1_3" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-6, -0.05, -4)
+
+[node name="Tile1_4" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-6, -0.05, 0)
+
+[node name="Tile1_5" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-6, -0.05, 4)
+
+[node name="Tile1_6" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-6, -0.05, 8)
+
+[node name="Tile1_7" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-6, -0.05, 12)
+
+[node name="Tile2_1" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-2, -0.05, -12)
+
+[node name="Tile2_2" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-2, -0.05, -8)
+
+[node name="Tile2_3" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-2, -0.05, -4)
+
+[node name="Tile2_4" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-2, -0.05, 0)
+
+[node name="Tile2_5" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-2, -0.05, 4)
+
+[node name="Tile2_6" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-2, -0.05, 8)
+
+[node name="Tile2_7" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(-2, -0.05, 12)
+
+[node name="Tile3_1" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(2, -0.05, -12)
+
+[node name="Tile3_2" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(2, -0.05, -8)
+
+[node name="Tile3_3" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(2, -0.05, -4)
+
+[node name="Tile3_4" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(2, -0.05, 0)
+
+[node name="Tile3_5" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(2, -0.05, 4)
+
+[node name="Tile3_6" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(2, -0.05, 8)
+
+[node name="Tile3_7" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(2, -0.05, 12)
+
+[node name="Tile4_1" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(6, -0.05, -12)
+
+[node name="Tile4_2" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(6, -0.05, -8)
+
+[node name="Tile4_3" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(6, -0.05, -4)
+
+[node name="Tile4_4" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(6, -0.05, 0)
+
+[node name="Tile4_5" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(6, -0.05, 4)
+
+[node name="Tile4_6" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(6, -0.05, 8)
+
+[node name="Tile4_7" parent="Geometry/Tiles" instance=ExtResource("kit_floor_tile_large")]
+position = Vector3(6, -0.05, 12)
+
+[node name="Shell" type="StaticBody3D" parent="Geometry"]
+
+[node name="FloorCollision" type="CollisionShape3D" parent="Geometry/Shell"]
+position = Vector3(0, -0.2, 0)
+shape = SubResource("RoomFloor")
+
+[node name="WestCollision" type="CollisionShape3D" parent="Geometry/Shell"]
+position = Vector3(-8.5, 2, 0)
+shape = SubResource("SideWall")
+
+[node name="EastCollision" type="CollisionShape3D" parent="Geometry/Shell"]
+position = Vector3(8.5, 2, 0)
+shape = SubResource("SideWall")
+
+[node name="NorthCollision" type="CollisionShape3D" parent="Geometry/Shell"]
+position = Vector3(0, 2, -14.5)
+shape = SubResource("EndWall")
+
+[node name="SouthCollision" type="CollisionShape3D" parent="Geometry/Shell"]
+position = Vector3(0, 2, 14.5)
+shape = SubResource("EndWall")
+
+[node name="WestPillarCollision" type="CollisionShape3D" parent="Geometry/Shell"]
+position = Vector3(-5.4, 2, 5)
+shape = SubResource("PillarCollision")
+
+[node name="EastPillarCollision" type="CollisionShape3D" parent="Geometry/Shell"]
+position = Vector3(5.4, 2, 5)
+shape = SubResource("PillarCollision")
+
+[node name="Walls" type="Node3D" parent="Geometry"]
+
+[node name="West1" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-8.5, 0, -12)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="East1" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(8.5, 0, -12)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="West2" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-8.5, 0, -8)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="East2" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(8.5, 0, -8)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="West3" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-8.5, 0, -4)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="East3" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(8.5, 0, -4)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="West4" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-8.5, 0, 0)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="East4" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(8.5, 0, 0)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="West5" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-8.5, 0, 4)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="East5" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(8.5, 0, 4)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="West6" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-8.5, 0, 8)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="East6" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(8.5, 0, 8)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="West7" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-8.5, 0, 12)
+rotation = Vector3(0, 1.570796, 0)
+
+[node name="East7" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(8.5, 0, 12)
+rotation = Vector3(0, -1.570796, 0)
+
+[node name="North1" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-6, 0, -14.5)
+
+[node name="South1" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-6, 0, 14.5)
+scale = Vector3(1, 0.28, 1)
+
+[node name="North2" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-2, 0, -14.5)
+
+[node name="South2" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(-2, 0, 14.5)
+scale = Vector3(1, 0.28, 1)
+
+[node name="North3" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(2, 0, -14.5)
+
+[node name="South3" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(2, 0, 14.5)
+scale = Vector3(1, 0.28, 1)
+
+[node name="North4" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(6, 0, -14.5)
+
+[node name="South4" parent="Geometry/Walls" instance=ExtResource("kit_wall")]
+position = Vector3(6, 0, 14.5)
+scale = Vector3(1, 0.28, 1)
+
+[node name="Decor" type="Node3D" parent="."]
+
+[node name="ExitArch" parent="Decor" instance=ExtResource("kit_wall_arched")]
+position = Vector3(0, 0, -13.28)
+
+[node name="DestinationSign" type="Label3D" parent="Decor"]
+position = Vector3(0, 3.25, -12.92)
+text = "Склеп Памяти"
+font_size = 38
+outline_size = 8
+pixel_size = 0.007
+modulate = Color(1, 0.89, 0.64, 1)
+billboard = 1
+double_sided = false
+
+[node name="Exit" type="Area3D" parent="."]
+position = Vector3(0, 1.3, -12.6)
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="Collision" type="CollisionShape3D" parent="Exit"]
+shape = SubResource("ExitVolume")
+
+[node name="Partition" type="StaticBody3D" parent="Geometry"]
+position = Vector3(0, 0, -2)
+
+[node name="SpellGate" type="StaticBody3D" parent="."]
+position = Vector3(0, 0, -1.8)
+
+[node name="Collision" type="CollisionShape3D" parent="SpellGate"]
+position = Vector3(0, 2, 0)
+shape = SubResource("GateCollision")
+
+[node name="Grate" parent="SpellGate" instance=ExtResource("kit_wall_gated")]
+position = Vector3(0, 0, 0)
+
+[node name="FixedArch" parent="Geometry/Partition" instance=ExtResource("kit_wall_arched")]
+position = Vector3(0, 0, -0.25)
+
+[node name="GateSign" type="Label3D" parent="SpellGate"]
+position = Vector3(0, 2.85, 0.67)
+text = "Вирдан  ·  1"
+font_size = 38
+outline_size = 8
+pixel_size = 0.007
+modulate = Color(0.54, 1, 0.72, 1)
+billboard = 1
+double_sided = false
+
+[node name="Rune" type="MeshInstance3D" parent="SpellGate"]
+position = Vector3(0, 1.55, 0.63)
+rotation = Vector3(1.570796, 0, 0)
+mesh = SubResource("GateRune_mesh")
+
+[node name="WestCollision" type="CollisionShape3D" parent="Geometry/Partition"]
+position = Vector3(-5, 2, 0)
+shape = SubResource("PartitionWall")
+
+[node name="WestPartition" parent="Geometry/Partition" instance=ExtResource("kit_wall")]
+position = Vector3(-5, 0, 0)
+scale = Vector3(1.5, 1, 1)
+
+[node name="WestEntryBanner" parent="Decor" instance=ExtResource("kit_banner_green")]
+position = Vector3(-4.9, 0, -1.7)
+
+[node name="WestExitBanner" parent="Decor" instance=ExtResource("kit_banner_yellow")]
+position = Vector3(-4.3, 0, -13.55)
+
+[node name="WestCarvedPillar" parent="Decor" instance=ExtResource("kit_pillar_decorated")]
+position = Vector3(-5.4, 0, 5.0)
+
+[node name="WestExitTorch" parent="Decor" instance=ExtResource("kit_torch_lit")]
+position = Vector3(-2.5, 2.05, -12.9)
+
+[node name="WestEntranceLantern" type="OmniLight3D" parent="."]
+position = Vector3(-5.1, 3.6, 5)
+light_color = Color(0.33, 0.91, 0.49, 1)
+light_energy = 1.24
+omni_range = 7.8
+
+[node name="WestGateLight" type="OmniLight3D" parent="."]
+position = Vector3(-2.7, 2.4, -0.6)
+light_color = Color(0.36, 0.95, 0.52, 1)
+light_energy = 1.35
+omni_range = 6.9
+
+[node name="WestExitLight" type="OmniLight3D" parent="."]
+position = Vector3(-2.6, 2.5, -12.0)
+light_color = Color(1, 0.79, 0.42, 1)
+light_energy = 1.0
+omni_range = 7.0
+
+[node name="WestMoss1" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(-5.550000000000001, -0.035, 7.4)
+rotation = Vector3(0, -1.57, 0)
+
+[node name="WestMoss2" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(-4.9, -0.035, 3.2)
+rotation = Vector3(0, -3.14, 0)
+
+[node name="WestMoss3" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(-5.550000000000001, -0.035, -7.2)
+rotation = Vector3(0, -4.71, 0)
+
+[node name="WestMoss4" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(-4.9, -0.035, -10.0)
+rotation = Vector3(0, -6.28, 0)
+
+[node name="EastCollision" type="CollisionShape3D" parent="Geometry/Partition"]
+position = Vector3(5, 2, 0)
+shape = SubResource("PartitionWall")
+
+[node name="EastPartition" parent="Geometry/Partition" instance=ExtResource("kit_wall")]
+position = Vector3(5, 0, 0)
+scale = Vector3(1.5, 1, 1)
+
+[node name="EastEntryBanner" parent="Decor" instance=ExtResource("kit_banner_green")]
+position = Vector3(4.9, 0, -1.7)
+
+[node name="EastExitBanner" parent="Decor" instance=ExtResource("kit_banner_yellow")]
+position = Vector3(4.3, 0, -13.55)
+
+[node name="EastCarvedPillar" parent="Decor" instance=ExtResource("kit_pillar_decorated")]
+position = Vector3(5.4, 0, 5.0)
+
+[node name="EastExitTorch" parent="Decor" instance=ExtResource("kit_torch_lit")]
+position = Vector3(2.5, 2.05, -12.9)
+
+[node name="EastEntranceLantern" type="OmniLight3D" parent="."]
+position = Vector3(5.1, 3.6, 5)
+light_color = Color(0.33, 0.91, 0.49, 1)
+light_energy = 1.24
+omni_range = 7.8
+
+[node name="EastGateLight" type="OmniLight3D" parent="."]
+position = Vector3(2.7, 2.4, -0.6)
+light_color = Color(0.36, 0.95, 0.52, 1)
+light_energy = 1.35
+omni_range = 6.9
+
+[node name="EastExitLight" type="OmniLight3D" parent="."]
+position = Vector3(2.6, 2.5, -12.0)
+light_color = Color(1, 0.79, 0.42, 1)
+light_energy = 1.0
+omni_range = 7.0
+
+[node name="EastMoss1" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(5.550000000000001, -0.035, 7.4)
+rotation = Vector3(0, 1.57, 0)
+
+[node name="EastMoss2" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(4.9, -0.035, 3.2)
+rotation = Vector3(0, 3.14, 0)
+
+[node name="EastMoss3" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(5.550000000000001, -0.035, -7.2)
+rotation = Vector3(0, 4.71, 0)
+
+[node name="EastMoss4" parent="Decor" instance=ExtResource("kit_floor_tile_small_weeds_A")]
+position = Vector3(4.9, -0.035, -10.0)
+rotation = Vector3(0, 6.28, 0)
+
+[node name="WestGoldInlay" type="MeshInstance3D" parent="Decor"]
+position = Vector3(-1.8, 0.009, 4.1)
+mesh = SubResource("GoldInlay_mesh")
+
+[node name="EastGoldInlay" type="MeshInstance3D" parent="Decor"]
+position = Vector3(1.8, 0.009, 4.1)
+mesh = SubResource("GoldInlay_mesh")
