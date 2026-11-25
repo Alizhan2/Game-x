@@ -1,4 +1,8 @@
-"""Record 16 kHz mono WAV spell samples for Echoes of Arcana."""
+"""Record 16 kHz mono WAV spell samples for Echoes of Arcana.
+
+Совет для команды: если Python/sounddevice ещё не установлен, откройте ai_voice/web_recorder.html
+в браузере, соберите клипы от всех 3 участников и упакуйте через pack_dataset.py.
+"""
 
 from __future__ import annotations
 
@@ -19,36 +23,48 @@ def save_wav(path: Path, pcm_int16_bytes: bytes, sr: int = TARGET_SR) -> None:
         wf.writeframes(pcm_int16_bytes)
 
 
+def _record_word(sd, np, *, speaker: str, word: str, count: int, out_dir: Path) -> None:
+    word_dir = out_dir / word
+    word_dir.mkdir(parents=True, exist_ok=True)
+    n_samples = int(TARGET_SR * CLIP_SECONDS)
+
+    print(f"\n=== Класс '{word.upper()}' ({count} клипов, speaker={speaker}, {TARGET_SR} Hz) ===")
+    print("Чередуй громкость: часть шёпотом, часть обычно, часть громко!")
+    for idx in range(1, count + 1):
+        input(f"[{idx}/{count}] Нажми Enter и произнеси '{word}'...")
+        audio = sd.rec(n_samples, samplerate=TARGET_SR, channels=1, dtype="int16")
+        sd.wait()
+        fname = word_dir / f"{word}__{speaker}_{int(time.time() * 1000)}_{idx:03d}.wav"
+        save_wav(fname, np.asarray(audio).tobytes(), TARGET_SR)
+        print(f"  Сохранено: {fname.name}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Record 16kHz mono spell clips into dataset_raw/")
     parser.add_argument("--speaker", required=True, help="Teammate name (e.g. ali)")
-    parser.add_argument("--word", required=True, choices=LABELS, help="Target spell label")
-    parser.add_argument("--count", type=int, default=25, help="Number of clips to record")
+    parser.add_argument("--word", choices=LABELS, help="Target spell label (omit when using --batch)")
+    parser.add_argument("--batch", action="store_true", help="Record all 4 classes sequentially")
+    parser.add_argument("--count", type=int, default=15, help="Number of clips per class")
     args = parser.parse_args()
+
+    if not args.batch and not args.word:
+        parser.error("Укажите --word <label> или --batch для записи всех 4 классов.")
 
     try:
         import numpy as np
         import sounddevice as sd
     except ImportError as exc:
         raise SystemExit(
-            "Install dependencies first: pip install -r ai_voice/requirements.txt"
+            "Install dependencies first: pip install -r ai_voice/requirements.txt "
+            "(или используйте ai_voice/web_recorder.html в браузере)"
         ) from exc
 
-    out_dir = Path(__file__).resolve().parent / "dataset_raw" / args.word
-    out_dir.mkdir(parents=True, exist_ok=True)
-    n_samples = int(TARGET_SR * CLIP_SECONDS)
+    out_dir = Path(__file__).resolve().parent / "dataset_raw"
+    words = ["virdan", "noktar", "targum", "background"] if args.batch else [args.word]
+    for word in words:
+        _record_word(sd, np, speaker=args.speaker, word=word, count=args.count, out_dir=out_dir)
 
-    print(f"Recording {args.count} samples for '{args.word}' (speaker={args.speaker}) at {TARGET_SR} Hz.")
-    print("Vary volume: whisper some, shout others!")
-    for idx in range(1, args.count + 1):
-        input(f"[{idx}/{args.count}] Press Enter and say '{args.word}'...")
-        audio = sd.rec(n_samples, samplerate=TARGET_SR, channels=1, dtype="int16")
-        sd.wait()
-        fname = out_dir / f"{args.speaker}_{int(time.time() * 1000)}_{idx:03d}.wav"
-        save_wav(fname, np.asarray(audio).tobytes(), TARGET_SR)
-        print(f"  Saved {fname.name}")
-
-    print("Done!")
+    print("\nГотово! Дальше: python ai_voice/pack_dataset.py && загрузка dataset_raw.zip в Colab.")
     return 0
 
 

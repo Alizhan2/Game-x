@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Echoes of Arcana — Сбор датасета голосов (16 kHz WAV)</title>
+  <style>
+    :root {
+      --bg: #0b0e17;
+      --panel: #141a2b;
+      --border: #28324d;
+      --text: #eef2ff;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --emerald: #34d399;
+      --violet: #a78bfa;
+      --amber: #f59e0b;
+      --danger: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #18223d 0%, var(--bg) 60%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; }
+    h1 { margin: 0 0 6px; font-size: 1.65rem; }
+    .sub { color: var(--muted); margin: 0 0 20px; font-size: 0.95rem; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+    }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    input, select, button {
+      font: inherit;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0d1220;
+      color: var(--text);
+      padding: 10px 12px;
+    }
+    input, select { width: 100%; }
+    .spells { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .spell-btn {
+      cursor: pointer;
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      background: #101729;
+      transition: 0.15s;
+    }
+    .spell-btn.active[data-word="virdan"] { border-color: var(--emerald); color: var(--emerald); background: #0c291f; }
+    .spell-btn.active[data-word="noktar"] { border-color: var(--violet); color: var(--violet); background: #21153b; }
+    .spell-btn.active[data-word="targum"] { border-color: var(--amber); color: var(--amber); background: #2b1d0b; }
+    .spell-btn.active[data-word="background"] { border-color: var(--accent); color: var(--accent); background: #0c2335; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+    .primary {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 11px 18px;
+    }
+    .primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .secondary { cursor: pointer; background: #1c253d; }
+    .meter-wrap {
+      margin-top: 14px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      height: 16px;
+      overflow: hidden;
+    }
+    .meter-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--emerald), var(--amber), var(--danger));
+      transition: width 60ms linear;
+    }
+    .hint {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .pill {
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: #0d1323;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .clip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border-bottom: 1px solid #1e263d;
+      font-size: 0.88rem;
+      flex-wrap: wrap;
+    }
+    audio { height: 32px; max-width: 240px; }
+    code { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Echoes of Arcana — Сбор голосов (16 kHz Mono WAV)</h1>
+    <p class="sub">Работает полностью оффлайн в браузере (Mac + Windows, без установки Python). Файлы сохраняются в формате <code>&lt;word&gt;__&lt;speaker&gt;_NNN.wav</code> для <code>pack_dataset.py</code> и Google Colab.</p>
+
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label for="speaker">Имя участника (латиницей)</label>
+          <input id="speaker" value="ali" placeholder="ali / teammate1 / teammate2" />
+        </div>
+        <div>
+          <label for="style">Рекомендуемый стиль произношения</label>
+          <select id="style">
+            <option value="normal">Обычный голос (чётко)</option>
+            <option value="whisper">Шёпот (особенно важно для НОКТАР)</option>
+            <option value="shout">Громко / эмоционально (в пылу боя)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label>Слово / класс (клип ровно 1.2 сек):</label>
+        <div class="spells" id="spellButtons">
+          <button class="spell-btn active" data-word="virdan">VIRDAN (Вирдан)</button>
+          <button class="spell-btn" data-word="noktar">NOKTAR (Ноктар)</button>
+          <button class="spell-btn" data-word="targum">TARGUM (Таргум)</button>
+          <button class="spell-btn" data-word="background">BACKGROUND (Шум / тишина / лишние слова)</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="micBtn" class="secondary">1. Включить микрофон</button>
+        <button id="recBtn" class="primary" disabled>2. Записать 1.2 сек (Пробел)</button>
+        <span id="statusText" style="color: var(--muted); font-size: 0.9rem;">Микрофон ещё не включён</span>
+      </div>
+
+      <div class="meter-wrap"><div id="meterBar" class="meter-bar"></div></div>
+      <div class="hint">
+        <span id="volLabel">Громкость RMS: 0.00</span>
+        <span>Цель на команду: по 25–30 клипов каждого класса (по 8–10 на человека)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="controls" style="margin-top: 0; justify-content: space-between;">
+        <div class="stats" id="statsBar"></div>
+        <button id="downloadAllBtn" class="primary" disabled>Скачать все клипы</button>
+      </div>
+      <div id="clipsList">Пока нет записей. Нажмите «Включить микрофон» → «Записать 1.2 сек».</div>
+    </div>
+  </div>
+
+  <script>
+    const TARGET_SR = 16000;
+    const CLIP_SEC = 1.2;
+    const TARGET_SAMPLES = Math.round(TARGET_SR * CLIP_SEC);
+
+    let selectedWord = "virdan";
+    let audioCtx = null;
+    let mediaStream = null;
+    let analyser = null;
+    let scriptNode = null;
+    let recording = false;
+    let capturedChunks = [];
+    let capturedLen = 0;
+    const clips = [];
+    const counts = { virdan: 0, noktar: 0, targum: 0, background: 0 };
+
+    const micBtn = document.getElementById("micBtn");
+    const recBtn = document.getElementById("recBtn");
+    const statusText = document.getElementById("statusText");
+    const meterBar = document.getElementById("meterBar");
+    const volLabel = document.getElementById("volLabel");
+    const clipsList = document.getElementById("clipsList");
+    const statsBar = document.getElementById("statsBar");
+    const downloadAllBtn = document.getElementById("downloadAllBtn");
+
+    function renderStats() {
+      statsBar.innerHTML = Object.entries(counts)
+        .map(([k, v]) => `<span class="pill"><b>${k.toUpperCase()}</b>: ${v}</span>`)
+        .join("");
+      downloadAllBtn.disabled = clips.length === 0;
+    }
+    renderStats();
+
+    document.getElementById("spellButtons").addEventListener("click", (e) => {
+      const btn = e.target.closest(".spell-btn");
+      if (!btn) return;
+      document.querySelectorAll(".spell-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedWord = btn.dataset.word;
+    });
+
+    micBtn.addEventListener("click", async () => {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaStreamSource(mediaStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        scriptNode = audioCtx.createScriptProcessor(2048, 1, 1);
+
+        source.connect(analyser);
+        analyser.connect(scriptNode);
+        scriptNode.connect(audioCtx.destination);
+
+        scriptNode.onaudioprocess = (ev) => {
+          const input = ev.inputBuffer.getChannelData(0);
+          let sumSq = 0;
+          for (let i = 0; i < input.length; i++) sumSq += input[i] * input[i];
+          const rms = Math.min(1, Math.sqrt(sumSq / input.length) * 3.5);
+          meterBar.style.width = `${Math.round(rms * 100)}%`;
+          volLabel.textContent = `Громкость RMS: ${rms.toFixed(2)} (${rms < 0.28 ? "ШЁПОТ" : "ГРОМКО"})`;
+
+          if (recording) {
+            capturedChunks.push(new Float32Array(input));
+            capturedLen += input.length;
+            const needSrc = Math.ceil(CLIP_SEC * audioCtx.sampleRate);
+            if (capturedLen >= needSrc) {
+              finishRecording();
+            }
+          }
+        };
+
+        recBtn.disabled = false;
+        micBtn.disabled = true;
+        statusText.textContent = `Микрофон готов (${audioCtx.sampleRate} Hz → 16000 Hz)`;
+      } catch (err) {
+        statusText.textContent = `Ошибка доступа к микрофону: ${err.message}`;
+      }
+    });
+
+    function startRecording() {
+      if (!audioCtx || recording) return;
+      capturedChunks = [];
+      capturedLen = 0;
+      recording = true;
+      recBtn.disabled = true;
+      statusText.textContent = `Идёт запись «${selectedWord.toUpperCase()}» (1.2 сек)...`;
+    }
+
+    function resampleTo16k(floatArr, origSr) {
+      if (origSr === TARGET_SR) return floatArr.slice(0, TARGET_SAMPLES);
+      const out = new Float32Array(TARGET_SAMPLES);
+      const ratio = (floatArr.length - 1) / Math.max(1, TARGET_SAMPLES - 1);
+      for (let i = 0; i < TARGET_SAMPLES; i++) {
+        const pos = Math.min(floatArr.length - 1, i * ratio);
+        const idx = Math.floor(pos);
+        const frac = pos - idx;
+        const nxt = Math.min(idx + 1, floatArr.length - 1);
+        out[i] = floatArr[idx] * (1 - frac) + floatArr[nxt] * frac;
+      }
+      return out;
+    }
+
+    function encodeWav16k(samples) {
+      const buf = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buf);
+      const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+      writeStr(0, "RIFF");
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeStr(8, "WAVE");
+      writeStr(12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, TARGET_SR, true);
+      view.setUint32(28, TARGET_SR * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, "data");
+      view.setUint32(40, samples.length * 2, true);
+      let off = 44;
+      for (let i = 0; i < samples.length; i++, off += 2) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      }
+      return new Blob([buf], { type: "audio/wav" });
+    }
+
+    function finishRecording() {
+      recording = false;
+      recBtn.disabled = false;
+      const merged = new Float32Array(capturedLen);
+      let offset = 0;
+      for (const ch of capturedChunks) {
+        merged.set(ch, offset);
+        offset += ch.length;
+      }
+      const resampled = resampleTo16k(merged, audioCtx.sampleRate);
+      const blob = encodeWav16k(resampled);
+      const speaker = (document.getElementById("speaker").value || "user").replace(/[^a-zA-Z0-9_-]/g, "");
+      const style = document.getElementById("style").value;
+      counts[selectedWord] += 1;
+      const idx = String(counts[selectedWord]).padStart(3, "0");
+      const filename = `${selectedWord}__${speaker}_${style}_${idx}.wav`;
+      const url = URL.createObjectURL(blob);
+
+      clips.unshift({ word: selectedWord, filename, url, blob });
+      renderStats();
+      renderClips();
+      statusText.textContent = `Сохранено: ${filename}`;
+    }
+
+    function renderClips() {
+      if (clips.length === 0) return;
+      clipsList.innerHTML = clips
+        .map(
+          (c, idx) => `
+          <div class="clip-row">
+            <span><b>${c.word.toUpperCase()}</b> · <code>${c.filename}</code></span>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <audio controls src="${c.url}"></audio>
+              <a href="${c.url}" download="${c.filename}" style="color: var(--accent);">Скачать</a>
+              <button class="secondary" onclick="removeClip(${idx})" style="padding:4px 9px;">✕</button>
+            </div>
+          </div>`
+        )
+        .join("");
+    }
+
+    window.removeClip = (idx) => {
+      const removed = clips.splice(idx, 1)[0];
+      if (removed) {
+        counts[removed.word] = Math.max(0, counts[removed.word] - 1);
+        URL.revokeObjectURL(removed.url);
+      }
+      renderStats();
+      renderClips();
+    };
+
+    recBtn.addEventListener("click", startRecording);
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && !recBtn.disabled && document.activeElement.tagName !== "INPUT") {
+        e.preventDefault();
+        startRecording();
+      }
+    });
+
+    downloadAllBtn.addEventListener("click", async () => {
+      for (const c of clips) {
+        const a = document.createElement("a");
+        a.href = c.url;
+        a.download = c.filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        await new Promise((r) => setTimeout(r, 120));
+      }
+    });
+  </script>
+</body>
+</html>
