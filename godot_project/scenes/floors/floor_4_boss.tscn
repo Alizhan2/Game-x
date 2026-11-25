@@ -1,0 +1,250 @@
+[gd_scene load_steps=23 format=3]
+
+[ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="1_floor"]
+[ext_resource type="Script" path="res://scripts/keeper_boss.gd" id="2_keeper"]
+[ext_resource type="PackedScene" path="res://assets/models/quaternius/robot_enemy.glb" id="3_robot"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/pillar_decorated.glb" id="4_pillar"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_arched.glb" id="5_arch"]
+
+[sub_resource type="Environment" id="Environment_summit"]
+background_mode = 1
+background_color = Color(0.065, 0.043, 0.09, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.72, 0.51, 0.43, 1)
+ambient_light_energy = 0.58
+glow_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="Material_basalt"]
+albedo_color = Color(0.12, 0.081, 0.085, 1)
+roughness = 0.84
+
+[sub_resource type="StandardMaterial3D" id="Material_bronze"]
+albedo_color = Color(0.4, 0.203, 0.1, 1)
+metallic = 0.38
+roughness = 0.65
+
+[sub_resource type="StandardMaterial3D" id="Material_amber"]
+albedo_color = Color(0.93, 0.44, 0.12, 1)
+emission_enabled = true
+emission = Color(0.9, 0.28, 0.055, 1)
+emission_energy_multiplier = 1.2
+
+[sub_resource type="StandardMaterial3D" id="Material_ward"]
+transparency = 1
+albedo_color = Color(0.98, 0.49, 0.12, 0.18)
+emission_enabled = true
+emission = Color(0.68, 0.23, 0.045, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_floor"]
+size = Vector3(28, 0.7, 32)
+
+[sub_resource type="BoxMesh" id="Mesh_floor"]
+material = SubResource("Material_basalt")
+size = Vector3(28, 0.7, 32)
+
+[sub_resource type="BoxShape3D" id="Shape_parapet_long"]
+size = Vector3(27, 2.8, 0.7)
+
+[sub_resource type="BoxMesh" id="Mesh_parapet_long"]
+material = SubResource("Material_bronze")
+size = Vector3(27, 1.1, 0.7)
+
+[sub_resource type="BoxShape3D" id="Shape_parapet_side"]
+size = Vector3(0.7, 2.8, 32)
+
+[sub_resource type="BoxMesh" id="Mesh_parapet_side"]
+material = SubResource("Material_bronze")
+size = Vector3(0.7, 1.1, 32)
+
+[sub_resource type="CylinderMesh" id="Mesh_dais"]
+material = SubResource("Material_bronze")
+top_radius = 7.6
+bottom_radius = 7.6
+height = 0.07
+radial_segments = 16
+
+[sub_resource type="TorusMesh" id="Mesh_rune_ring"]
+material = SubResource("Material_amber")
+inner_radius = 7.14
+outer_radius = 7.26
+rings = 48
+ring_segments = 8
+
+[sub_resource type="BoxMesh" id="Mesh_approach_inlay"]
+material = SubResource("Material_amber")
+size = Vector3(0.09, 0.028, 12)
+
+[sub_resource type="BoxShape3D" id="Shape_ward"]
+size = Vector3(27.4, 4.2, 0.28)
+
+[sub_resource type="BoxMesh" id="Mesh_ward"]
+material = SubResource("Material_ward")
+size = Vector3(27.4, 2.8, 0.055)
+
+[sub_resource type="BoxMesh" id="Mesh_ward_rail"]
+material = SubResource("Material_amber")
+size = Vector3(27.4, 0.085, 0.1)
+
+[node name="Summit" type="Node3D"]
+script = ExtResource("1_floor")
+objective_initial = "Отрази луч Хранителя щитом «Таргум» (3)."
+objective_cleared = "Произнеси «Вирдан» (1), затем «Ноктар» (2) и соедини все три слова. В финале произнеси слово или удерживай 0 пять секунд."
+required_spell = "targum"
+
+[node name="SpawnPoint" type="Marker3D" parent="."]
+position = Vector3(0, 0.85, 8)
+
+[node name="Environment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_summit")
+
+[node name="Dusk" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-50, -30, 0)
+light_color = Color(1, 0.66, 0.43, 1)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="FoundryLight" type="OmniLight3D" parent="."]
+position = Vector3(0, 5, 3)
+light_color = Color(1, 0.55, 0.27, 1)
+light_energy = 1.45
+omni_range = 19.0
+
+[node name="KeeperLight" type="OmniLight3D" parent="."]
+position = Vector3(0, 4.3, -6)
+light_color = Color(0.51, 0.68, 1, 1)
+light_energy = 1.55
+omni_range = 13.0
+
+[node name="ArenaFloor" type="StaticBody3D" parent="."]
+position = Vector3(0, -0.35, -1)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ArenaFloor"]
+shape = SubResource("Shape_floor")
+
+[node name="Surface" type="MeshInstance3D" parent="ArenaFloor"]
+mesh = SubResource("Mesh_floor")
+
+[node name="Boundaries" type="StaticBody3D" parent="."]
+
+[node name="NorthCollision" type="CollisionShape3D" parent="Boundaries"]
+position = Vector3(0, 1.4, -16.65)
+shape = SubResource("Shape_parapet_long")
+
+[node name="NorthParapet" type="MeshInstance3D" parent="Boundaries"]
+position = Vector3(0, 0.55, -16.65)
+mesh = SubResource("Mesh_parapet_long")
+
+[node name="SouthCollision" type="CollisionShape3D" parent="Boundaries"]
+position = Vector3(0, 1.4, 14.65)
+shape = SubResource("Shape_parapet_long")
+
+[node name="SouthParapet" type="MeshInstance3D" parent="Boundaries"]
+position = Vector3(0, 0.55, 14.65)
+mesh = SubResource("Mesh_parapet_long")
+
+[node name="WestCollision" type="CollisionShape3D" parent="Boundaries"]
+position = Vector3(-13.65, 1.4, -1)
+shape = SubResource("Shape_parapet_side")
+
+[node name="WestParapet" type="MeshInstance3D" parent="Boundaries"]
+position = Vector3(-13.65, 0.55, -1)
+mesh = SubResource("Mesh_parapet_side")
+
+[node name="EastCollision" type="CollisionShape3D" parent="Boundaries"]
+position = Vector3(13.65, 1.4, -1)
+shape = SubResource("Shape_parapet_side")
+
+[node name="EastParapet" type="MeshInstance3D" parent="Boundaries"]
+position = Vector3(13.65, 0.55, -1)
+mesh = SubResource("Mesh_parapet_side")
+
+[node name="Architecture" type="Node3D" parent="."]
+
+[node name="CrownArch" parent="Architecture" instance=ExtResource("5_arch")]
+position = Vector3(0, 0, -16.95)
+scale = Vector3(2.8, 2.8, 1.2)
+
+[node name="WestCrownPillar" parent="Architecture" instance=ExtResource("4_pillar")]
+position = Vector3(-7.8, 0, -17.05)
+scale = Vector3(1.8, 2.25, 1.6)
+
+[node name="EastCrownPillar" parent="Architecture" instance=ExtResource("4_pillar")]
+position = Vector3(7.8, 0, -17.05)
+scale = Vector3(1.8, 2.25, 1.6)
+
+[node name="WestWatchPillar" parent="Architecture" instance=ExtResource("4_pillar")]
+position = Vector3(-14.25, 0, -7.5)
+scale = Vector3(1.25, 1.7, 1.25)
+
+[node name="EastWatchPillar" parent="Architecture" instance=ExtResource("4_pillar")]
+position = Vector3(14.25, 0, -7.5)
+scale = Vector3(1.25, 1.7, 1.25)
+
+[node name="ArenaRing" type="Node3D" parent="."]
+position = Vector3(0, 0, -7.7)
+
+[node name="BronzeDais" type="MeshInstance3D" parent="ArenaRing"]
+mesh = SubResource("Mesh_dais")
+
+[node name="OuterRuneRing" type="MeshInstance3D" parent="ArenaRing"]
+position = Vector3(0, 0.059, 0)
+mesh = SubResource("Mesh_rune_ring")
+
+[node name="InnerRuneRing" type="MeshInstance3D" parent="ArenaRing"]
+position = Vector3(0, 0.052, 0)
+scale = Vector3(0.87, 0.87, 0.87)
+mesh = SubResource("Mesh_rune_ring")
+
+[node name="ApproachLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-2.4, 0.022, 6.2)
+mesh = SubResource("Mesh_approach_inlay")
+
+[node name="ApproachRight" type="MeshInstance3D" parent="."]
+position = Vector3(2.4, 0.022, 6.2)
+mesh = SubResource("Mesh_approach_inlay")
+
+[node name="SpellGate" type="StaticBody3D" parent="."]
+position = Vector3(0, 0, 3)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SpellGate"]
+position = Vector3(0, 2.1, 0)
+shape = SubResource("Shape_ward")
+
+[node name="Ward" type="MeshInstance3D" parent="SpellGate"]
+position = Vector3(0, 1.42, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_ward")
+
+[node name="LowerEdge" type="MeshInstance3D" parent="SpellGate"]
+position = Vector3(0, 0.05, 0)
+mesh = SubResource("Mesh_ward_rail")
+
+[node name="UpperEdge" type="MeshInstance3D" parent="SpellGate"]
+position = Vector3(0, 2.85, 0)
+mesh = SubResource("Mesh_ward_rail")
+
+[node name="SpellHint" type="Label3D" parent="SpellGate"]
+position = Vector3(0, 3.25, 0.25)
+billboard = 1
+no_depth_test = true
+modulate = Color(1, 0.74, 0.36, 1)
+text = "ТАРГУМ · 3"
+font_size = 48
+outline_size = 12
+pixel_size = 0.0084
+
+[node name="KeeperBoss" type="Node3D" parent="."]
+position = Vector3(0, 0.12, -9.3)
+script = ExtResource("2_keeper")
+
+[node name="Model" parent="KeeperBoss" instance=ExtResource("3_robot")]
+scale = Vector3(5.8, 5.8, 5.8)
+
+[node name="KeeperName" type="Label3D" parent="KeeperBoss"]
+position = Vector3(0, 5.15, 0)
+billboard = 1
+modulate = Color(0.73, 0.85, 1, 1)
+text = "АРХИВ-0"
+font_size = 41
+outline_size = 12
+pixel_size = 0.009
