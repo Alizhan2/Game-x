@@ -83,8 +83,12 @@ func _track_player(player: ArcanaPlayer, delta: float) -> void:
 		_windup = maxf(0.0, _windup - delta)
 		if _windup == 0.0:
 			var reach := BEAM_RANGE if _casting_beam else STRIKE_RANGE
+			var took_damage := false
 			if distance <= reach:
-				player.take_hit(14 if _casting_beam else 9, _casting_beam)
+				var base_damage := 14 if _casting_beam else 9
+				var damage := maxi(1, roundi(base_damage * AdaptiveAI.get_damage_multiplier()))
+				took_damage = player.take_hit(damage, _casting_beam)
+			AdaptiveAI.record_player_hit(took_damage)
 			_recovery = RECOVERY
 	elif _recovery == 0.0 and distance <= BEAM_RANGE:
 		_casting_beam = distance > STRIKE_RANGE

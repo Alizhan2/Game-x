@@ -26,6 +26,8 @@ func _on_defeated() -> void:
 func _on_spell_heard(spell: String, _conf: float, _vol: float, d20: Dictionary, _whisper: bool) -> void:
 	if d20["d20"] == 1:
 		return
+	if current_phase != Phase.FINAL_CHOICE and d20.get("countered", false):
+		return
 	match current_phase:
 		Phase.BEAM_SHIELD:
 			if spell == "targum":
