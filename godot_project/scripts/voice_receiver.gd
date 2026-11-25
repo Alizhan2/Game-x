@@ -13,8 +13,10 @@ var _udp := PacketPeerUDP.new()
 var _engine_pid: int = -1
 var _connected: bool = false
 var _last_packet_msec: int = 0
-var _last_cast_msec: int = 0
+var _next_cast_msec: int = 0
+var _voice_silence_sec: float = 0.0
 var _keyboard_silence_sec: float = 0.0
+var _reported_silence_sec: float = 0.0
 
 func _ready() -> void:
 	var err := _udp.bind(UDP_PORT, "127.0.0.1")
@@ -42,7 +44,14 @@ func _process(delta: float) -> void:
 	var now := Time.get_ticks_msec()
 	if _connected and now - _last_packet_msec > 3000:
 		_connected = false
+		_voice_silence_sec = 0.0
 		engine_status_changed.emit(false)
+
+	# A held 0 measures a continuous keyboard attempt, even if voice packets arrive.
+	var silence_sec := _keyboard_silence_sec if _keyboard_silence_sec > 0.0 else _voice_silence_sec
+	if silence_sec != _reported_silence_sec:
+		_reported_silence_sec = silence_sec
+		silence_updated.emit(silence_sec)
 
 func _poll_udp() -> void:
 	while _udp.get_available_packet_count() > 0:
@@ -59,8 +68,7 @@ func _poll_udp() -> void:
 		var spell: String = str(parsed.get("spell", "background"))
 		var conf: float = float(parsed.get("confidence", 0.0))
 		var vol: float = float(parsed.get("volume", 0.0))
-		var silence_sec: float = float(parsed.get("silence_sec", 0.0))
-		silence_updated.emit(silence_sec)
+		_voice_silence_sec = float(parsed.get("silence_sec", 0.0))
 
 		if spell != "background" and conf >= MIN_CONFIDENCE:
 			if not push_to_talk_enabled or Input.is_action_pressed("push_to_talk"):
@@ -79,15 +87,14 @@ func _handle_keyboard_fallback(delta: float) -> void:
 
 	if Input.is_action_pressed("silence_hold"):
 		_keyboard_silence_sec += delta
-		silence_updated.emit(_keyboard_silence_sec)
-	elif _keyboard_silence_sec > 0.0:
+	else:
 		_keyboard_silence_sec = 0.0
 
 func _emit_spell_if_ready(spell: String, confidence: float, volume: float) -> void:
 	var now := Time.get_ticks_msec()
-	if now - _last_cast_msec < int(CAST_COOLDOWN * 1000.0):
+	if now < _next_cast_msec:
 		return
-	_last_cast_msec = now
+	_next_cast_msec = now + int(CAST_COOLDOWN * 1000.0)
 	var is_whisper := volume < 0.28
 	var d20_result := D20Roller.roll_spell(confidence, volume)
 	spell_heard.emit(spell, confidence, volume, d20_result, is_whisper)
