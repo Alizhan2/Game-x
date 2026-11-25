@@ -1,6 +1,7 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="floor_script"]
+[ext_resource type="Script" path="res://scripts/combat_guard.gd" id="guard_script"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/floor_tile_large.glb" id="tile"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall.glb" id="wall"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/wall_gated.glb" id="gate"]
@@ -403,3 +404,13 @@ collision_mask = 1
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Exit"]
 shape = SubResource("ExitShape")
+
+[node name="CryptGuardian" type="Node3D" parent="."]
+position = Vector3(0.4, 0.1, 2.5)
+script = ExtResource("guard_script")
+max_health = 75
+approach_speed = 2.1
+detection_radius = 10.5
+
+[node name="Model" parent="CryptGuardian" instance=ExtResource("skeleton")]
+scale = Vector3(0.95, 0.95, 0.95)

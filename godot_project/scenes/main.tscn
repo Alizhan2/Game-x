@@ -39,11 +39,17 @@ script = ExtResource("5_ren")
 
 [node name="Ren" parent="Player/RenVisual" instance=ExtResource("4_mage")]
 
-[node name="Camera3D" type="Camera3D" parent="Player"]
-position = Vector3(0, 3.8, 5.6)
-rotation = Vector3(-0.471239, 0, 0)
+[node name="CameraPivot" type="Node3D" parent="Player"]
+position = Vector3(0, 1.5, 0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="Player/CameraPivot"]
+rotation = Vector3(-0.35, 0, 0)
+spring_length = 5.4
+margin = 0.25
+
+[node name="Camera3D" type="Camera3D" parent="Player/CameraPivot/SpringArm3D"]
 current = true
-fov = 65.0
+fov = 68.0
 far = 100.0
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]

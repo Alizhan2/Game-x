@@ -1,6 +1,8 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="1_tower_floor"]
+[ext_resource type="Script" path="res://scripts/combat_guard.gd" id="guard_script"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit_adventurers/Rogue_Hooded.glb" id="rogue_model"]
 
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/floor_tile_large.glb" id="kit_floor_tile_large"]
 
@@ -481,3 +483,13 @@ mesh = SubResource("GoldInlay_mesh")
 [node name="EastGoldInlay" type="MeshInstance3D" parent="Decor"]
 position = Vector3(1.8, 0.009, 4.1)
 mesh = SubResource("GoldInlay_mesh")
+
+[node name="ElvenWarden" type="Node3D" parent="."]
+position = Vector3(0, 0.1, 2.5)
+script = ExtResource("guard_script")
+max_health = 60
+approach_speed = 2.3
+detection_radius = 11.0
+
+[node name="Model" parent="ElvenWarden" instance=ExtResource("rogue_model")]
+scale = Vector3(0.95, 0.95, 0.95)
