@@ -1,0 +1,7 @@
+/dataset_raw.zip
+/calibration_profile.json
+/calibration_profile.json.*.tmp
+/silero_vad.onnx
+/SILERO_LICENSE.txt
+/voice_training_artifacts/
+/voice_training_artifacts.zip
