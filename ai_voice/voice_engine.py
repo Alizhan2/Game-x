@@ -5,16 +5,25 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import socket
+import sys
 import time
+from collections import deque
 from pathlib import Path
 from typing import Any
 
-from features import LABELS, TARGET_SAMPLES, TARGET_SR, compute_rms, extract_log_mel
+from features import LABELS, TARGET_SAMPLES, TARGET_SR, compute_rms, extract_log_mel, resample_to_16k
+from voice_vad import MODEL_PATH as SILERO_PATH, VAD_SAMPLES, SileroVAD
 
 UDP_HOST = "127.0.0.1"
 UDP_PORT = 5055
-DEFAULT_PROFILE_PATH = Path(__file__).resolve().parent / "calibration_profile.json"
+if getattr(sys, "frozen", False):
+    app_data = os.environ.get("LOCALAPPDATA")
+    PROFILE_DIR = Path(app_data) / "EchoesOfArcana" if app_data else Path(sys.executable).parent
+else:
+    PROFILE_DIR = Path(__file__).resolve().parent
+DEFAULT_PROFILE_PATH = PROFILE_DIR / "calibration_profile.json"
 
 
 class AdaptiveNoiseGate:
@@ -57,7 +66,7 @@ class AdaptiveNoiseGate:
             self.last_speech_ts = now
 
         if vad_speech_prob is not None:
-            gated_floor = max(self.min_threshold * 0.75, self.noise_floor * 1.2)
+            gated_floor = max(0.01, self.noise_floor * 1.15)
             is_speech = (vad_speech_prob >= 0.5 and vol >= gated_floor) or (
                 vol >= self.threshold * 1.35
             )
@@ -70,6 +79,53 @@ class AdaptiveNoiseGate:
 
         silence_sec = max(0.0, now - self.last_speech_ts)
         return False, silence_sec
+
+
+class UtteranceBuffer:
+    """Keep a short lead-in and produce at most one clip per speech segment."""
+
+    def __init__(self) -> None:
+        self.lead_in = deque(maxlen=3)
+        self.frames: list = []
+        self.voiced_levels: list[float] = []
+        self.quiet_frames = 0
+        self.emitted = False
+
+    def add(self, frame, is_speech: bool, volume: float) -> tuple[list, float] | None:
+        if is_speech:
+            if not self.voiced_levels:
+                self.frames.extend(self.lead_in)
+            self.quiet_frames = 0
+            if not self.emitted:
+                self.voiced_levels.append(volume)
+        else:
+            self.quiet_frames += 1
+
+        self.lead_in.append(frame)
+        if not self.voiced_levels:
+            return None
+        finished = self.quiet_frames >= 5
+        if self.emitted:
+            if finished:
+                self._clear()
+            return None
+
+        self.frames.append(frame)
+        if not finished and len(self.frames) * VAD_SAMPLES < TARGET_SAMPLES:
+            return None
+
+        self.emitted = True
+        result = None
+        if len(self.voiced_levels) >= 3:
+            result = self.frames, sum(self.voiced_levels) / len(self.voiced_levels)
+        if finished:
+            self._clear()
+        return result
+
+    def _clear(self) -> None:
+        self.frames = []
+        self.voiced_levels = []
+        self.emitted = False
 
 
 def select_prediction(
@@ -86,7 +142,7 @@ def select_prediction(
     spell = str(labels[best_idx])
     conf = float(probs[best_idx])
 
-    if prototypes and mel_vec:
+    if prototypes and mel_vec and not (spell == "background" and conf >= 0.5):
         norm_v = math.sqrt(sum(x * x for x in mel_vec)) or 1.0
         best_proto = ""
         best_sim = -1.0
@@ -140,18 +196,13 @@ def softmax(logits: list[float]) -> list[float]:
     return [e / s for e in exps]
 
 
-def _try_load_silero_vad(mode: str = "auto") -> tuple[Any | None, str]:
+def _try_load_silero_vad(mode: str = "auto") -> tuple[SileroVAD | None, str]:
     if mode == "energy":
         return None, "energy"
     try:
-        import torch  # noqa: F401
-        from silero_vad import load_silero_vad
-
-        vad_model = load_silero_vad()
-        return vad_model, "silero"
-    except Exception:
-        if mode == "silero":
-            print("[VoiceEngine] Silero VAD не найден; откат на AdaptiveNoiseGate (energy).")
+        return SileroVAD(SILERO_PATH), "silero"
+    except Exception as exc:
+        print(f"[VoiceEngine] Silero недоступен ({exc}). Активен энергетический порог.")
         return None, "energy"
 
 
@@ -165,7 +216,12 @@ def save_calibration_profile(
         "noise_floor": round(float(noise_floor), 5),
         "prototypes": {k: [round(float(v), 5) for v in vec] for k, vec in prototypes.items()},
     }
-    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    temp_path = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        temp_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        temp_path.replace(path)
+    finally:
+        temp_path.unlink(missing_ok=True)
 
 
 def load_calibration_profile(path: Path) -> tuple[float | None, dict[str, list[float]]]:
@@ -180,8 +236,15 @@ def load_calibration_profile(path: Path) -> tuple[float | None, dict[str, list[f
             for k, v in raw_protos.items()
             if isinstance(v, list)
         }
-        return (float(nf) if nf is not None else None), protos
-    except Exception:
+        noise_floor = float(nf) if nf is not None else None
+        if noise_floor is not None and not 0.0 <= noise_floor <= 1.0:
+            return None, {}
+        protos = {
+            word: vec for word, vec in protos.items()
+            if word in LABELS[1:] and len(vec) == 32 * 32 and all(map(math.isfinite, vec))
+        }
+        return noise_floor, protos
+    except (AttributeError, OSError, ValueError, TypeError):
         return None, {}
 
 
@@ -251,6 +314,44 @@ def run_adaptive_simulation(host: str = UDP_HOST, port: int = UDP_PORT) -> None:
     _stream_script(script, host, port, "SIMULATE-ADAPTIVE")
 
 
+def _input_sample_rate(sd) -> int:
+    device = sd.query_devices(kind="input")
+    try:
+        sd.check_input_settings(samplerate=TARGET_SR, channels=1, dtype="float32")
+        return TARGET_SR
+    except sd.PortAudioError:
+        return round(device["default_samplerate"])
+
+
+def _calibrate(stream, frames_per_block: int, read_frame, gate, profile_path: Path) -> dict:
+    blocks_per_second = TARGET_SR / VAD_SAMPLES
+
+    def record(seconds: float):
+        return [read_frame(stream, frames_per_block) for _ in range(round(seconds * blocks_per_second))]
+
+    input("Подготовься к калибровке. Нажми Enter и дождись подсказок (около 10 секунд).")
+    print("Помолчи 1.5 сек, измеряю фон…", flush=True)
+    discarded = stream.read_available
+    if discarded:
+        stream.read(discarded)
+    gate.calibrate_noise([compute_rms(frame) for frame in record(1.5)])
+
+    prototypes = {}
+    for word in LABELS[1:]:
+        print(f"Приготовься: {word.upper()}", flush=True)
+        record(1.5)
+        print(f"Сейчас: {word.upper()}!", flush=True)
+        frames = record(1.2)
+        if max(map(compute_rms, frames)) < max(0.01, gate.noise_floor * 1.2):
+            raise ValueError(f"Слово {word.upper()} не было слышно. Повтори калибровку ближе к микрофону.")
+        samples = [sample for frame in frames for sample in frame]
+        prototypes[word] = extract_log_mel(samples).ravel().tolist()
+
+    save_calibration_profile(profile_path, gate.noise_floor, prototypes)
+    print(f"[VoiceEngine] Профиль сохранён: {profile_path}")
+    return prototypes
+
+
 def run_live_microphone(
     *,
     model_path: Path,
@@ -267,123 +368,104 @@ def run_live_microphone(
         import numpy as np
         import onnxruntime as ort
         import sounddevice as sd
-    except ImportError as exc:
-        raise SystemExit(
-            "Install dependencies first: pip install -r ai_voice/requirements.txt"
-        ) from exc
 
-    if not model_path.is_file() and not calibrate_only:
-        raise SystemExit(
-            f"Model not found: {model_path}. Train first in Colab/train_onnx.py or use --simulate."
-        )
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    gate = AdaptiveNoiseGate(min_threshold=vad_threshold)
-
-    try:
-        default_in = sd.query_devices(kind="input")
-        if not default_in or int(default_in.get("max_input_channels", 0)) <= 0:
-            raise RuntimeError("No input channels available")
+        sample_rate = _input_sample_rate(sd)
+        frames_per_block = max(1, round(sample_rate * VAD_SAMPLES / TARGET_SR))
+        if not calibrate_only and not model_path.is_file():
+            raise FileNotFoundError(f"Модель не найдена: {model_path}")
     except Exception as exc:
-        print(f"[VoiceEngine] Микрофон не обнаружен ({exc}). Работает клавиатурный фолбэк [1/2/3] в Godot.")
+        print(f"[VoiceEngine] Голос недоступен ({exc}). В Godot работают клавиши [1/2/3].")
         if allow_no_mic:
             while True:
                 time.sleep(1.0)
-        return 0
+        return 1 if calibrate_only else 0
 
+    def read_frame(stream, frame_count):
+        data, overflowed = stream.read(frame_count)
+        if overflowed:
+            raise BufferError("Пропуск аудиоблока")
+        mono = data[:, 0]
+        if sample_rate != TARGET_SR:
+            mono = np.asarray(resample_to_16k(mono, sample_rate), dtype=np.float32)
+        return mono
+
+    gate = AdaptiveNoiseGate(min_threshold=vad_threshold)
     loaded_nf, prototypes = load_calibration_profile(profile_path)
     if loaded_nf is not None:
         gate.noise_floor = loaded_nf
         gate.threshold = max(gate.min_threshold, loaded_nf * gate.margin)
-    calibrated = skip_calibration or bool(prototypes)
-
-    if not skip_calibration or calibrate_only:
-        print("=== Ритуал привязки голоса (10 сек) ===")
-        print("1/4: Замер шума зала (помолчите 1.5 сек)...")
-        silence_rec = sd.rec(int(1.5 * TARGET_SR), samplerate=TARGET_SR, channels=1, dtype="float32")
-        sd.wait()
-        flat_sil = silence_rec.flatten().tolist()
-        chunk_sz = max(1, TARGET_SR // 10)
-        rms_chunks = [compute_rms(flat_sil[i : i + chunk_sz]) for i in range(0, len(flat_sil), chunk_sz)]
-        thresh = gate.calibrate_noise(rms_chunks)
-        print(f"   Уровень шума={gate.noise_floor:.4f}, порог речи={thresh:.4f}")
-
-        prototypes = {}
-        for idx, word in enumerate(("virdan", "noktar", "targum"), start=2):
-            input(f"{idx}/4: Нажми Enter и произнеси '{word.upper()}' один раз...")
-            rec = sd.rec(TARGET_SAMPLES, samplerate=TARGET_SR, channels=1, dtype="float32")
-            sd.wait()
-            mel = extract_log_mel(rec.flatten(), TARGET_SR)
-            prototypes[word] = [float(x) for x in mel.flatten().tolist()]
-
-        save_calibration_profile(profile_path, gate.noise_floor, prototypes)
-        calibrated = True
-        print(f"=== Профиль сохранён в {profile_path.name}! ===")
-        if calibrate_only:
-            return 0
-
-    session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
-    silero_model, active_vad_mode = _try_load_silero_vad(vad_mode)
-    print(f"[VoiceEngine] Активен режим VAD={active_vad_mode}, порог={gate.threshold:.4f}, UDP={host}:{port}")
-
-    ring = np.zeros(TARGET_SAMPLES, dtype=np.float32)
-
-    def audio_cb(indata, _frames, _time_info, _status) -> None:
-        nonlocal ring
-        mono = indata[:, 0].astype(np.float32)
-        if len(mono) >= len(ring):
-            ring = mono[-len(ring) :]
-        else:
-            ring = np.concatenate([ring[len(mono) :], mono])
+    calibrated = bool(prototypes)
 
     try:
-        with sd.InputStream(samplerate=TARGET_SR, channels=1, dtype="float32", callback=audio_cb):
-            last_emit = 0.0
+        with sd.InputStream(
+            samplerate=sample_rate, channels=1, dtype="float32", blocksize=frames_per_block, latency="high"
+        ) as stream, socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            if not skip_calibration or calibrate_only:
+                prototypes = _calibrate(stream, frames_per_block, read_frame, gate, profile_path)
+                calibrated = True
+                if calibrate_only:
+                    return 0
+
+            session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+            silero_model, active_vad_mode = _try_load_silero_vad(vad_mode)
+            print(f"[VoiceEngine] VAD={active_vad_mode}, порог={gate.threshold:.4f}, UDP={host}:{port}")
+            utterance = UtteranceBuffer()
+            next_heartbeat = 0.0
+            discarded = stream.read_available
+            if discarded:
+                stream.read(discarded)
+
             while True:
-                now = time.monotonic()
-                if now - last_emit < 0.1:
-                    time.sleep(0.02)
+                try:
+                    frame = read_frame(stream, frames_per_block)
+                except BufferError:
+                    utterance = UtteranceBuffer()
+                    gate.last_speech_ts = time.monotonic()
+                    if silero_model is not None:
+                        silero_model.reset()
                     continue
-                last_emit = now
 
-                recent = ring[-int(0.25 * TARGET_SR) :]
-                vol = compute_rms(recent)
-
-                vad_prob: float | None = None
+                now = time.monotonic()
+                volume = compute_rms(frame)
+                vad_probability = None
                 if silero_model is not None:
                     try:
-                        import torch
+                        vad_probability = silero_model.predict(frame)
+                    except Exception as exc:
+                        print(f"[VoiceEngine] Silero остановлен ({exc}). Активен энергетический порог.")
+                        silero_model, active_vad_mode = None, "energy"
 
-                        chunk_512 = torch.from_numpy(ring[-512:].copy())
-                        vad_prob = float(silero_model(chunk_512, TARGET_SR).item())
-                    except Exception:
-                        vad_prob = None
-
-                is_speech, silence_sec = gate.update(vol, now, vad_prob)
-
-                spell = "background"
-                conf = max(0.0, 1.0 - vol)
-                if is_speech:
-                    mel = extract_log_mel(ring, TARGET_SR)
+                is_speech, silence_sec = gate.update(volume, now, vad_probability)
+                clip = utterance.add(frame, is_speech, volume)
+                spell, confidence = "background", max(0.0, 1.0 - volume)
+                if clip is not None:
+                    frames, volume = clip
+                    mel = extract_log_mel(np.concatenate(frames), TARGET_SR)
                     logits = session.run(["logits"], {"mel": mel})[0][0].tolist()
-                    probs = softmax(logits)
-                    mel_vec = [float(x) for x in mel.flatten().tolist()]
-                    spell, conf = select_prediction(probs, LABELS, mel_vec, prototypes)
+                    spell, confidence = select_prediction(softmax(logits), LABELS, mel.ravel().tolist(), prototypes)
 
-                pkt = build_udp_packet(
-                    spell=spell,
-                    confidence=conf,
-                    volume=vol,
-                    is_speech=is_speech,
-                    silence_sec=silence_sec,
-                    calibrated=calibrated,
-                    noise_floor=gate.noise_floor,
-                    vad_mode=active_vad_mode,
+                if clip is None and now < next_heartbeat:
+                    continue
+                next_heartbeat = now + 0.1
+                cast = spell != "background"
+                sock.sendto(
+                    build_udp_packet(
+                        spell=spell,
+                        confidence=confidence,
+                        volume=volume,
+                        is_speech=is_speech or cast,
+                        silence_sec=0.0 if cast else silence_sec,
+                        calibrated=calibrated,
+                        noise_floor=gate.noise_floor,
+                        vad_mode=active_vad_mode,
+                    ),
+                    (host, port),
                 )
-                sock.sendto(pkt, (host, port))
-    except Exception as exc:
-        print(f"[VoiceEngine] Аудиопоток остановлен ({exc}). В Godot используйте клавиши [1/2/3].")
+    except KeyboardInterrupt:
         return 0
+    except Exception as exc:
+        print(f"[VoiceEngine] Аудиопоток остановлен ({exc}). В Godot работают клавиши [1/2/3].")
+        return 1 if calibrate_only else 0
 
 
 def main() -> int:

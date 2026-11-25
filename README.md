@@ -38,14 +38,12 @@
 
 ## Быстрый старт (3 шага)
 
-1. **Обучение или запуск Voice AI (`ai_voice/`):**
-   * Для обучения модели на GPU: откройте [`ai_voice/train_in_colab.ipynb`](ai_voice/train_in_colab.ipynb) в Google Colab (T4 GPU) и сохраните полученный `spell_model.onnx`.
-   * Локальный запуск:
+1. **Обучение или запуск Voice AI (`ai_voice/`)**
+   * Для проверки UDP без микрофона и установки библиотек выполните из корня репозитория:
      ```bash
-     cd ai_voice
-     python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-     python voice_engine.py --simulate   # тестовый поток команд в Godot без микрофона
+     python3 ai_voice/voice_engine.py --simulate
      ```
+   * Сбор голосов команды, обучение T4, запуск с микрофоном и подготовка демонстрации описаны в [инструкции участника №1](docs/AI_AND_DEMO.md).
 2. **В Godot 4:** откройте `godot_project/project.godot` (одна версия **Godot 4.3 / 4.4 Standard** на всех ноутбуках) и нажмите **F5**.
 3. **Документация и вайбкодинг:** прочитайте [`CLAUDE.md`](CLAUDE.md) перед тем, как просить Claude Code или Antigravity редактировать сцены и скрипты.
 
