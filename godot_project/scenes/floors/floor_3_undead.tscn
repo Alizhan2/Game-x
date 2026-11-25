@@ -339,7 +339,7 @@ light_energy = 1.2
 omni_range = 4.1
 omni_attenuation = 0.9
 
-[node name="Secret" type="Node3D" parent="."]
+[node name="Secret" type="Node3D" parent="." groups=["noctar_hidden"]]
 visible = false
 
 [node name="MemorySpirit" parent="Secret" instance=ExtResource("ghost")]
