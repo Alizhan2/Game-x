@@ -35,10 +35,12 @@ func _run() -> void:
 	var arena := (load("res://scripts/tests/combat_trial.tscn") as PackedScene).instantiate()
 	root.add_child(arena)
 	current_scene = arena
+	arena.get_node("LevelManager").jump_to_boss_for_jury()
 	await physics_frame
 	await physics_frame
 	player = current_scene.get_node("Player")
-	keeper = current_scene.get_node("KeeperBoss")
+	keeper = arena.get_node("ActiveFloor/Summit/KeeperBoss")
+	keeper.global_position = player.global_position + Vector3(0, 0, -5)
 	voice = root.get_node("VoiceReceiver")
 	var door := current_scene.get_node("SealedPassage") as StaticBody3D
 	var inscription := current_scene.get_node("Inscription") as Label3D
@@ -77,14 +79,17 @@ func _run() -> void:
 	await click()
 	check(keeper.health == 24, "Ordinary melee hit deals base damage")
 
+	var guard = load("res://scripts/combat_guard.gd").new()
+	arena.add_child(guard)
 	cast("targum", 12)
 	for distance in [1.8, 5.0]:
-		keeper.global_position = player.global_position + Vector3(0, 0, -distance)
-		keeper.rooted_for = 0.0
-		keeper._recovery = 0.0
-		keeper._physics_process(0.1)
-		keeper._physics_process(1.3)
-		check(player.health == 100 and "заблокирован" in player.hud_status_label.text, "TARGUM blocks the guard attack at range %.1f" % distance)
+		guard.global_position = player.global_position + Vector3(0, 0, -distance)
+		guard.rooted_for = 0.0
+		guard._recovery = 0.0
+		guard._physics_process(0.1)
+		guard._physics_process(1.3)
+		var attack := "Удар" if distance < 3 else "Луч"
+		check(player.health == 100 and (attack + " заблокирован") in player.hud_status_label.text, "TARGUM blocks the guard attack at range %.1f" % distance)
 	player._physics_process(7.0)
 	player.take_hit(14, true)
 	check(player.health == 86 and player.shield_left == 0.0, "Damage resumes after shield expiry")
