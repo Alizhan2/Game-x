@@ -1,6 +1,6 @@
 [gd_scene load_steps=23 format=3]
 
-[ext_resource type="Script" path="res://scenes/floors/tower_floor.gd" id="1_floor"]
+[ext_resource type="Script" path="res://scenes/floors/keeper_floor.gd" id="1_floor"]
 [ext_resource type="Script" path="res://scripts/keeper_boss.gd" id="2_keeper"]
 [ext_resource type="PackedScene" path="res://assets/models/quaternius/robot_enemy.glb" id="3_robot"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit_dungeon/pillar_decorated.glb" id="4_pillar"]
@@ -101,9 +101,6 @@ size = Vector3(27.4, 0.085, 0.1)
 
 [node name="Summit" type="Node3D"]
 script = ExtResource("1_floor")
-objective_initial = "Отрази луч Хранителя щитом «Таргум» (3)."
-objective_cleared = "Произнеси «Вирдан» (1), затем «Ноктар» (2) и соедини все три слова. В финале произнеси слово или удерживай 0 пять секунд."
-required_spell = "targum"
 
 [node name="SpawnPoint" type="Marker3D" parent="."]
 position = Vector3(0, 0.85, 8)
@@ -217,39 +214,43 @@ mesh = SubResource("Mesh_approach_inlay")
 position = Vector3(2.4, 0.022, 6.2)
 mesh = SubResource("Mesh_approach_inlay")
 
-[node name="SpellGate" type="StaticBody3D" parent="."]
-position = Vector3(0, 0, 3)
+[node name="ExitWard" type="StaticBody3D" parent="."]
+position = Vector3(0, 0, -13.5)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="SpellGate"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitWard"]
 position = Vector3(0, 2.1, 0)
 shape = SubResource("Shape_ward")
 
-[node name="Ward" type="MeshInstance3D" parent="SpellGate"]
+[node name="Ward" type="MeshInstance3D" parent="ExitWard"]
 position = Vector3(0, 1.42, 0)
 cast_shadow = 0
 mesh = SubResource("Mesh_ward")
 
-[node name="LowerEdge" type="MeshInstance3D" parent="SpellGate"]
+[node name="LowerEdge" type="MeshInstance3D" parent="ExitWard"]
 position = Vector3(0, 0.05, 0)
 mesh = SubResource("Mesh_ward_rail")
 
-[node name="UpperEdge" type="MeshInstance3D" parent="SpellGate"]
+[node name="UpperEdge" type="MeshInstance3D" parent="ExitWard"]
 position = Vector3(0, 2.85, 0)
 mesh = SubResource("Mesh_ward_rail")
 
-[node name="SpellHint" type="Label3D" parent="SpellGate"]
+[node name="SpellHint" type="Label3D" parent="ExitWard"]
 position = Vector3(0, 3.25, 0.25)
 billboard = 1
 no_depth_test = true
 modulate = Color(1, 0.74, 0.36, 1)
-text = "ТАРГУМ · 3"
+text = "ПЕЧАТЬ ХРАНИТЕЛЯ"
 font_size = 48
 outline_size = 12
 pixel_size = 0.0084
 
+[node name="RetreatPoint" type="Marker3D" parent="."]
+position = Vector3(7, 0.12, -10)
+
 [node name="KeeperBoss" type="Node3D" parent="."]
 position = Vector3(0, 0.12, -9.3)
 script = ExtResource("2_keeper")
+retreat_point = NodePath("../RetreatPoint")
 
 [node name="Model" parent="KeeperBoss" instance=ExtResource("3_robot")]
 scale = Vector3(5.8, 5.8, 5.8)
