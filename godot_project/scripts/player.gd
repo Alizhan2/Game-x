@@ -14,6 +14,7 @@ const MELEE_DAMAGE := 12
 const MELEE_COOLDOWN := 0.45
 
 @onready var hud_spell_label := get_node_or_null("../CanvasLayer/HudPanel/VBox/SpellLabel") as Label
+@onready var hud_health_bar := get_node_or_null("../CanvasLayer/HudPanel/VBox/Health") as ProgressBar
 @onready var hud_status_label := get_node_or_null("../CanvasLayer/HudPanel/VBox/StatusLabel") as Label
 @onready var _camera_pivot := get_node_or_null("CameraPivot") as Node3D
 @onready var _spring_arm := get_node_or_null("CameraPivot/SpringArm3D") as SpringArm3D
@@ -28,6 +29,7 @@ var _melee_wait := 0.0
 var _attack_requested := false
 var _engine_connected := false
 var _last_hit := ""
+var _last_spell_name := ""
 var _shield := MeshInstance3D.new()
 var _camera_yaw := 0.0
 var _camera_pitch := -0.35
@@ -37,6 +39,7 @@ var _shake_strength := 0.0
 func _ready() -> void:
 	add_to_group(&"combat_player")
 	VoiceReceiver.spell_heard.connect(_on_spell_heard)
+	GameState.censorship_changed.connect(_on_censorship_changed)
 	VoiceReceiver.engine_status_changed.connect(_on_engine_status_changed)
 	AdaptiveAI.difficulty_changed.connect(func(_diff: int): _update_status())
 	AdaptiveAI.counter_shield_changed.connect(func(_spell: String): _update_status())
@@ -135,6 +138,9 @@ func _on_engine_status_changed(connected: bool) -> void:
 
 
 func _update_status() -> void:
+	if hud_health_bar != null:
+		hud_health_bar.max_value = MAX_HEALTH
+		hud_health_bar.value = health
 	_shield.visible = shield_left > 0.0
 	if hud_status_label == null:
 		return
@@ -155,11 +161,22 @@ func _trigger_cast_anim() -> void:
 		_visual.play_action([&"Spell1", &"Spellcast_Shoot", &"Cast", &"Spell_Cast"], 0.45)
 
 
+func _on_censorship_changed(enabled: bool) -> void:
+	if hud_spell_label == null or _last_spell_name.is_empty():
+		return
+	var label := hud_spell_label.text
+	if enabled:
+		hud_spell_label.text = label.replace(_last_spell_name, "[УДАЛЕНО]")
+	else:
+		hud_spell_label.text = label.replace("[УДАЛЕНО]", _last_spell_name)
+
+
 func _on_spell_heard(spell: String, confidence: float, volume: float, d20: Dictionary, is_whisper: bool) -> void:
 	if spell not in ["virdan", "noktar", "targum"]:
 		return
 	var mode_tag := "ШЁПОТ" if is_whisper else ("КРИК" if volume >= 0.7 else "ГОЛОС")
-	var cast_name := "[УДАЛЕНО]" if GameState.ui_censored else spell.to_upper()
+	_last_spell_name = spell.to_upper()
+	var cast_name := "[УДАЛЕНО]" if GameState.ui_censored else _last_spell_name
 	if hud_spell_label != null:
 		hud_spell_label.modulate = Color.WHITE
 		if d20["d20"] == 1:
@@ -263,9 +280,18 @@ func _melee_attack() -> void:
 		var damage := nearest.receive_strike(MELEE_DAMAGE)
 		var is_crit := damage > MELEE_DAMAGE
 		_last_hit = "Крит −%d" % damage if is_crit else "Удар −%d" % damage
+		if damage == 0:
+			_last_hit = "Тень неуязвима. Примени Ноктар (2)." if nearest.requires_exposure else "Щит поглотил удар"
 		_SpellVFX.spawn_melee_slash(fx_parent, global_position, slash_yaw, is_crit)
 		_add_shake(0.22 if is_crit else 0.10)
 	_update_status()
+
+
+func set_floor_spawn(point: Vector3) -> void:
+	_spawn_position = point
+	global_position = point
+	velocity = Vector3.ZERO
+	reset_physics_interpolation()
 
 
 func take_hit(amount: int, beam: bool) -> bool:
@@ -281,8 +307,7 @@ func take_hit(amount: int, beam: bool) -> bool:
 		if _visual != null and _visual.has_method("play_action"):
 			_visual.play_action([&"RecieveHit", &"Hit_A", &"Hit"], 0.35)
 		if health == 0:
-			global_position = _spawn_position
-			velocity = Vector3.ZERO
+			set_floor_spawn(_spawn_position)
 			stealth_left = 0.0
 			health = MAX_HEALTH
 			_last_hit = "Возвращение к точке старта"

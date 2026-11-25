@@ -54,6 +54,7 @@ func load_floor(floor_index: int) -> void:
 	var scene_path := str(floor_info["scene_path"])
 	if _current_floor_node != null and is_instance_valid(_current_floor_node):
 		_current_floor_node.queue_free()
+		_current_floor_node.get_parent().remove_child(_current_floor_node)
 		_current_floor_node = null
 
 	if ResourceLoader.exists(scene_path) and active_floor_container_path != NodePath():

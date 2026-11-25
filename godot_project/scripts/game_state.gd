@@ -17,6 +17,7 @@ func unlock_word(word: String) -> void:
 		word_unlocked.emit(word)
 
 func set_floor(floor_num: int) -> void:
+	selected_ending = ""
 	current_floor = floor_num
 	floor_changed.emit(floor_num)
 
@@ -29,5 +30,7 @@ func mark_log_discovered(log_id: int) -> void:
 		discovered_logs.append(log_id)
 
 func finish_chapter_one(ending_id: String) -> void:
+	if not selected_ending.is_empty():
+		return
 	selected_ending = ending_id
 	ending_reached.emit(ending_id)

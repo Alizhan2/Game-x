@@ -7,6 +7,9 @@ const _SpellVFX = preload("res://scripts/spell_vfx.gd")
 @export var max_health: int = 60
 @export var approach_speed: float = 1.8
 @export var detection_radius: float = 12.0
+@export var requires_exposure := false
+
+signal beam_blocked(player: ArcanaPlayer)
 
 const STRIKE_RANGE := 2.8
 const BEAM_RANGE := 8.0
@@ -36,7 +39,7 @@ func _ready() -> void:
 
 	_animation = find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if _animation != null:
-		for loop_clip: StringName in [&"Idle", &"Running_A", &"Walk"]:
+		for loop_clip: StringName in [&"Idle", &"Running_A", &"Walk", &"CharacterArmature|Idle", &"CharacterArmature|Run"]:
 			if _animation.has_animation(loop_clip):
 				_animation.get_animation(loop_clip).loop_mode = Animation.LOOP_LINEAR
 
@@ -92,6 +95,8 @@ func bind_roots(duration: float) -> void:
 
 
 func receive_strike(base_damage: int) -> int:
+	if requires_exposure and exposed_for <= 0.0:
+		return 0
 	var damage := base_damage * 2 if exposed_for > 0.0 else base_damage
 	exposed_for = 0.0
 	health = maxi(0, health - damage)
@@ -117,8 +122,12 @@ func _physics_process(delta: float) -> void:
 	if player != null and rooted_for <= 0.0:
 		moving = _track_player(player, delta)
 	if _windup <= 0.0:
-		_play_clip([&"Running_A", &"Walk"] if moving else [&"Idle"])
+		_play_clip([&"Running_A", &"Walk", &"CharacterArmature|Run"] if moving else [&"Idle", &"CharacterArmature|Idle"])
 	_update_status()
+
+
+func _should_cast_beam(distance: float) -> bool:
+	return distance > STRIKE_RANGE
 
 
 func _track_player(player: ArcanaPlayer, delta: float) -> bool:
@@ -153,14 +162,16 @@ func _track_player(player: ArcanaPlayer, delta: float) -> bool:
 				var base_damage := 14 if _casting_beam else 9
 				var damage := maxi(1, roundi(base_damage * AdaptiveAI.get_damage_multiplier()))
 				took_damage = player.take_hit(damage, _casting_beam)
+				if _casting_beam and not took_damage:
+					beam_blocked.emit(player)
 			AdaptiveAI.record_player_hit(took_damage)
 			_recovery = RECOVERY
 		return false
 	elif _recovery == 0.0 and distance <= BEAM_RANGE:
-		_casting_beam = distance > STRIKE_RANGE
+		_casting_beam = _should_cast_beam(distance)
 		_windup = WINDUP
 		_play_clip(
-			[&"Spell1", &"Sword_Attack2", &"Spellcast_Shoot", &"Cast"] if _casting_beam else [&"1H_Melee_Attack_Slice_Diagonal", &"Sword_Attack", &"Staff_Attack", &"Attack"],
+			[&"Spell1", &"Sword_Attack2", &"Spellcast_Shoot", &"Cast", &"CharacterArmature|Shoot"] if _casting_beam else [&"Sword_Attack", &"Staff_Attack", &"1H_Melee_Attack_Slice_Diagonal", &"Attack", &"CharacterArmature|Attack"],
 			0.55
 		)
 		return false
@@ -181,6 +192,8 @@ func _update_status() -> void:
 		tags.append("КОРНИ")
 	if exposed_for > 0.0:
 		tags.append("УЯЗВИМОСТЬ")
+	elif requires_exposure:
+		tags.append("ТЕНЬ · НОКТАР")
 	if _windup > 0.0:
 		tags.append("ГОТОВИТ ЛУЧ" if _casting_beam else "ЗАМАХ")
 	_status.text = "%d / %d  %s" % [health, max_health, " · ".join(tags)]

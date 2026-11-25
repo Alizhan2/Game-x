@@ -29,6 +29,9 @@ func run() -> void:
 	root.get_node("VoiceReceiver").silence_updated.emit(2.4)
 	check(is_equal_approx(current_scene.get_node("CanvasLayer/HudPanel/VBox/Silence").value, 2.4), "Silence signal fills HUD")
 	var actor = current_scene.get_node("Player")
+	var health_bar: ProgressBar = current_scene.get_node("CanvasLayer/HudPanel/VBox/Health")
+	actor.take_hit(12, false)
+	check(health_bar.value == actor.MAX_HEALTH - 12, "Damage updates the health bar")
 	var anim = actor.get_node("RenVisual")._animation
 	for clip in ["Idle", "Run", "Spell1"]:
 		check(anim.has_animation(clip), "Ren animation: " + clip)
@@ -39,5 +42,6 @@ func run() -> void:
 		manager.load_floor(i)
 		await process_frame
 		var floor_node = manager._current_floor_node
-		check(floor_node.get_node_or_null("SpellGate/WardRunes") != null, "Animated gate on floor %d" % i)
+		var gate_path := "ExitWard/WardRunes" if i == 4 else "SpellGate/WardRunes"
+		check(floor_node.get_node_or_null(gate_path) != null, "Animated gate on floor %d" % i)
 	quit(int(failed))

@@ -15,7 +15,7 @@ var _connected: bool = false
 var _last_packet_msec: int = 0
 var _next_cast_msec: int = 0
 var _voice_silence_sec: float = 0.0
-var _keyboard_silence_sec: float = 0.0
+var _hold_started_msec := -1
 var _reported_silence_sec: float = 0.0
 
 func _ready() -> void:
@@ -38,16 +38,16 @@ func _exit_tree() -> void:
 	if _engine_pid > 0:
 		OS.kill(_engine_pid)
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if get_tree().paused:
-		# Do not replay speech captured while a menu was open.
+		# Discard speech captured while a menu was open.
 		while _udp.get_available_packet_count() > 0:
 			_udp.get_packet()
-		_keyboard_silence_sec = 0.0
+		_hold_started_msec = -1
 		_voice_silence_sec = 0.0
 		return
 	_poll_udp()
-	_handle_keyboard_fallback(delta)
+	_handle_keyboard_fallback()
 
 	var now := Time.get_ticks_msec()
 	if _connected and now - _last_packet_msec > 3000:
@@ -56,7 +56,7 @@ func _process(delta: float) -> void:
 		engine_status_changed.emit(false)
 
 	# A held 0 measures a continuous keyboard attempt, even if voice packets arrive.
-	var silence_sec := _keyboard_silence_sec if _keyboard_silence_sec > 0.0 else _voice_silence_sec
+	var silence_sec := (now - _hold_started_msec) / 1000.0 if _hold_started_msec >= 0 else _voice_silence_sec
 	if silence_sec != _reported_silence_sec:
 		_reported_silence_sec = silence_sec
 		silence_updated.emit(silence_sec)
@@ -82,7 +82,7 @@ func _poll_udp() -> void:
 			if not push_to_talk_enabled or Input.is_action_pressed("push_to_talk"):
 				_emit_spell_if_ready(spell, conf, vol)
 
-func _handle_keyboard_fallback(delta: float) -> void:
+func _handle_keyboard_fallback() -> void:
 	var whisper := Input.is_key_pressed(KEY_SHIFT)
 	var fallback_vol := 0.2 if whisper else 0.85
 
@@ -94,9 +94,13 @@ func _handle_keyboard_fallback(delta: float) -> void:
 		_emit_spell_if_ready("targum", 1.0, fallback_vol)
 
 	if Input.is_action_pressed("silence_hold"):
-		_keyboard_silence_sec += delta
+		if _hold_started_msec < 0:
+			_hold_started_msec = Time.get_ticks_msec()
 	else:
-		_keyboard_silence_sec = 0.0
+		_hold_started_msec = -1
+
+func reset_cast_cooldown() -> void:
+	_next_cast_msec = 0
 
 func _emit_spell_if_ready(spell: String, confidence: float, volume: float) -> void:
 	var now := Time.get_ticks_msec()

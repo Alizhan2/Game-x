@@ -4,7 +4,7 @@ const LevelManager = preload("res://scripts/level_manager.gd")
 const TowerFloor = preload("res://scenes/floors/tower_floor.gd")
 
 @onready var _manager: LevelManager = $LevelManager
-@onready var _player: CharacterBody3D = $Player
+@onready var _player: ArcanaPlayer = $Player
 @onready var _floor_container: Node3D = $ActiveFloor
 @onready var _floor_title: Label = $CanvasLayer/HudPanel/VBox/FloorTitle
 @onready var _objective: Label = $CanvasLayer/HudPanel/VBox/ObjectiveLabel
@@ -31,9 +31,7 @@ func _on_level_loaded(_floor_index: int, title: String) -> void:
 		break
 	if not is_instance_valid(_active_floor):
 		return
-	_player.global_position = _active_floor.spawn_point.global_position
-	_player.velocity = Vector3.ZERO
-	_player.reset_physics_interpolation()
+	_player.set_floor_spawn(_active_floor.spawn_point.global_position)
 	_objective.text = _active_floor.objective_initial
 	_active_floor.objective_changed.connect(_on_objective_changed)
 	_active_floor.exit_requested.connect(_on_exit_requested)

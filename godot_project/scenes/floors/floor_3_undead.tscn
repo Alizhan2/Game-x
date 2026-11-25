@@ -411,6 +411,7 @@ script = ExtResource("guard_script")
 max_health = 75
 approach_speed = 2.1
 detection_radius = 10.5
+requires_exposure = true
 
 [node name="Model" parent="CryptGuardian" instance=ExtResource("skeleton")]
 scale = Vector3(0.68, 0.68, 0.68)

@@ -91,6 +91,12 @@ theme_override_colors/font_color = Color(0.72, 0.75, 0.8, 1)
 theme_override_font_sizes/font_size = 14
 autowrap_mode = 3
 
+[node name="Health" type="ProgressBar" parent="CanvasLayer/HudPanel/VBox"]
+custom_minimum_size = Vector2(0, 6)
+mouse_filter = 2
+self_modulate = Color(0.95, 0.55, 0.55, 1)
+show_percentage = false
+
 [node name="SilenceLabel" type="Label" parent="CanvasLayer/HudPanel/VBox"]
 text = "Тишина  0,0 / 5 с     ·     0 удерживать     ·     Tab гримуар"
 theme_override_font_sizes/font_size = 14

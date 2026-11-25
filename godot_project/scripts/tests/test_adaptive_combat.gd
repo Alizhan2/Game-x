@@ -42,15 +42,18 @@ func fire_beam(attacker) -> void:
 	attacker._physics_process(1.3)
 
 func _run() -> void:
-	var arena := (load("res://scripts/tests/combat_trial.tscn") as PackedScene).instantiate()
+	var arena := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(arena)
 	current_scene = arena
+	arena.get_node("CanvasLayer/TowerMenu").get_node("%Begin").pressed.emit()
+	arena.get_node("LevelManager").jump_to_boss_for_jury()
 	await physics_frame
 	await physics_frame
 	ai = root.get_node("AdaptiveAI")
 	voice = root.get_node("VoiceReceiver")
 	player = arena.get_node("Player")
-	boss = arena.get_node("KeeperBoss")
+	boss = arena.get_node("ActiveFloor/Summit/KeeperBoss")
+	boss.global_position = player.global_position + Vector3(0, 0, -5)
 	ai.counter_shield_changed.connect(func(s: String): shield_events.append(s))
 	ai.taunt_triggered.connect(func(s: String): taunts.append(s))
 	ai.adaptation_updated.connect(func(s: Dictionary): stats = s)
@@ -79,6 +82,7 @@ func _run() -> void:
 	boss.rooted_for = 0.0
 	check(cast("virdan") and boss.rooted_for == 0.0 and boss.current_phase == 1, "Predicted cast cannot root or advance Keeper ritual")
 
+	boss.current_phase = 3  # During the combo the Keeper keeps attacking through blocks.
 	for mode in range(3):
 		ai.set_difficulty(mode)
 		ai.reset_for_new_run()
