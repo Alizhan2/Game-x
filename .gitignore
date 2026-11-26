@@ -10,6 +10,7 @@ ai_voice/.venv/
 __pycache__/
 *.py[cod]
 ai_voice/dataset_raw/
+ai_voice/dataset_*.zip
 
 # Builds & OS
 builds/

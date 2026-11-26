@@ -116,6 +116,66 @@
     }
     audio { height: 32px; max-width: 240px; }
     code { color: var(--accent); }
+    input.invalid { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.25); }
+    .error-text { color: var(--danger) !important; font-weight: 600; }
+    .prep-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .prep-toggle input { width: auto; padding: 0; margin: 0; }
+    .recording-banner {
+      display: none;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .recording-banner.prep {
+      display: block;
+      background: rgba(245, 158, 11, 0.14);
+      border-color: var(--amber);
+      color: #fde68a;
+    }
+    .recording-banner.live {
+      display: block;
+      background: rgba(251, 113, 133, 0.18);
+      border-color: var(--danger);
+      color: #fecdd3;
+      animation: recPulse 0.9s infinite ease-in-out;
+    }
+    @keyframes recPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 113, 133, 0.35); }
+      50% { box-shadow: 0 0 0 6px rgba(251, 113, 133, 0); }
+    }
+    .rec-progress {
+      margin-top: 8px;
+      height: 8px;
+      background: rgba(9, 13, 22, 0.8);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .rec-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--amber), var(--danger));
+      transition: width 40ms linear;
+    }
+    .clip-warn {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid var(--amber);
+      color: #fde68a;
+      font-size: 0.78rem;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
@@ -152,7 +212,13 @@
       <div class="controls">
         <button id="micBtn" class="secondary">1. Включить микрофон</button>
         <button id="recBtn" class="primary" disabled>2. Записать 1.2 сек (Пробел)</button>
+        <label class="prep-toggle"><input type="checkbox" id="useCountdown" checked /> Короткий отсчёт (0.6 сек) перед записью</label>
         <span id="statusText" style="color: var(--muted); font-size: 0.9rem;">Микрофон ещё не включён</span>
+      </div>
+
+      <div id="recBanner" class="recording-banner">
+        <div id="recBannerText"></div>
+        <div class="rec-progress"><div id="recProgressBar" class="rec-progress-bar"></div></div>
       </div>
 
       <div class="meter-wrap"><div id="meterBar" class="meter-bar"></div></div>
@@ -160,6 +226,7 @@
         <span id="volLabel">Громкость RMS: 0.00</span>
         <span>Цель на команду: по 25–30 клипов каждого класса (по 8–10 на человека)</span>
       </div>
+      <div id="micDiag" class="hint" style="margin-top:6px;"></div>
     </div>
 
     <div class="card">
@@ -181,7 +248,11 @@
     let mediaStream = null;
     let analyser = null;
     let scriptNode = null;
+    let silentGain = null;
     let recording = false;
+    let prepping = false;
+    let recWatchdog = null;
+    let lastAudioTick = 0;
     let take;
     let capturedChunks = [];
     let capturedLen = 0;
@@ -190,14 +261,25 @@
     const sessionId = Date.now();
     let takeNumber = 0;
 
+    const speakerInput = document.getElementById("speaker");
+    const useCountdown = document.getElementById("useCountdown");
     const micBtn = document.getElementById("micBtn");
     const recBtn = document.getElementById("recBtn");
     const statusText = document.getElementById("statusText");
+    const recBanner = document.getElementById("recBanner");
+    const recBannerText = document.getElementById("recBannerText");
+    const recProgressBar = document.getElementById("recProgressBar");
     const meterBar = document.getElementById("meterBar");
     const volLabel = document.getElementById("volLabel");
+    const micDiag = document.getElementById("micDiag");
     const clipsList = document.getElementById("clipsList");
     const statsBar = document.getElementById("statsBar");
     const downloadAllBtn = document.getElementById("downloadAllBtn");
+
+    function setStatus(msg, isError = false) {
+      statusText.textContent = msg;
+      statusText.classList.toggle("error-text", isError);
+    }
 
     function renderStats() {
       statsBar.innerHTML = Object.entries(counts)
@@ -206,6 +288,10 @@
       downloadAllBtn.disabled = clips.length === 0;
     }
     renderStats();
+
+    speakerInput.addEventListener("input", () => {
+      speakerInput.classList.remove("invalid");
+    });
 
     document.getElementById("spellButtons").addEventListener("click", (e) => {
       const btn = e.target.closest(".spell-btn");
@@ -221,16 +307,26 @@
           audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
         });
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        await audioCtx.resume();
+
         const source = audioCtx.createMediaStreamSource(mediaStream);
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 1024;
         scriptNode = audioCtx.createScriptProcessor(2048, 1, 1);
+        silentGain = audioCtx.createGain();
+        silentGain.gain.value = 0;
 
         source.connect(analyser);
         analyser.connect(scriptNode);
-        scriptNode.connect(audioCtx.destination);
+        scriptNode.connect(silentGain);
+        silentGain.connect(audioCtx.destination);
+        window.__arcanaAudio = { mediaStream, audioCtx, source, analyser, scriptNode, silentGain };
+
+        const trackLabel = mediaStream.getAudioTracks()[0]?.label || "Микрофон";
+        micDiag.textContent = `Устройство: ${trackLabel} · AudioContext: ${audioCtx.state} · Если полоска ниже не двигается, открой ссылку в Google Chrome или Safari.`;
 
         scriptNode.onaudioprocess = (ev) => {
+          lastAudioTick = Date.now();
           const input = ev.inputBuffer.getChannelData(0);
           let sumSq = 0;
           for (let i = 0; i < input.length; i++) sumSq += input[i] * input[i];
@@ -242,6 +338,10 @@
             capturedChunks.push(new Float32Array(input));
             capturedLen += input.length;
             const needSrc = Math.ceil(CLIP_SEC * audioCtx.sampleRate);
+            const pct = Math.min(100, (capturedLen / needSrc) * 100);
+            recProgressBar.style.width = `${pct.toFixed(1)}%`;
+            const leftSec = Math.max(0, CLIP_SEC * (1 - capturedLen / needSrc));
+            recBannerText.textContent = `🔴 ГОВОРИ СЕЙЧАС: «${take.word.toUpperCase()}» (${leftSec.toFixed(1)} сек)`;
             if (capturedLen >= needSrc) {
               finishRecording();
             }
@@ -250,27 +350,60 @@
 
         recBtn.disabled = false;
         micBtn.disabled = true;
-        statusText.textContent = `Микрофон готов (${audioCtx.sampleRate} Hz → 16000 Hz)`;
+        setStatus(`Микрофон готов (${audioCtx.sampleRate} Hz → 16000 Hz)`);
       } catch (err) {
-        statusText.textContent = `Ошибка доступа к микрофону: ${err.message}`;
+        setStatus(`Ошибка доступа к микрофону: ${err.message}. Открой страницу в обычном Google Chrome или Safari.`, true);
       }
     });
 
-    function startRecording() {
-      if (!audioCtx || recording) return;
-      const speaker = document.getElementById("speaker").value.trim().toLowerCase();
-      if (!/^[a-z0-9-]+$/.test(speaker)) {
-        statusText.textContent = "Введи имя участника латиницей. Можно использовать цифры и дефис.";
+    async function startRecording() {
+      if (!audioCtx || recording || prepping) return;
+      const speaker = speakerInput.value.trim().toLowerCase();
+      if (!/^[a-z0-9_-]+$/.test(speaker)) {
+        speakerInput.classList.add("invalid");
+        speakerInput.focus();
+        setStatus("Сначала введи имя участника латиницей (например: ali), иначе запись не стартует.", true);
         return;
       }
+      speakerInput.classList.remove("invalid");
+
+      if (audioCtx.state !== "running") {
+        await audioCtx.resume();
+      }
+      micDiag.textContent = `Устройство: ${mediaStream?.getAudioTracks()[0]?.label || "Микрофон"} · AudioContext: ${audioCtx.state} · Если полоска ниже не двигается, открой ссылку в Google Chrome или Safari.`;
+
       const style = selectedWord === "background" ? "noise" : document.getElementById("style").value;
       const index = String(++takeNumber).padStart(3, "0");
       take = { word: selectedWord, filename: `${selectedWord}__${speaker}_${style}_${index}_${sessionId}.wav` };
       capturedChunks = [];
       capturedLen = 0;
-      recording = true;
       recBtn.disabled = true;
-      statusText.textContent = `Идёт запись «${selectedWord.toUpperCase()}» (1.2 сек)...`;
+
+      if (useCountdown.checked) {
+        prepping = true;
+        recBanner.className = "recording-banner prep";
+        recProgressBar.style.width = "0%";
+        recBannerText.textContent = `Приготовься... сейчас скажи «${selectedWord.toUpperCase()}»`;
+        setStatus(`Подготовка к записи «${selectedWord.toUpperCase()}»...`);
+        await new Promise((r) => setTimeout(r, 600));
+        prepping = false;
+      }
+
+      recording = true;
+      recBanner.className = "recording-banner live";
+      recProgressBar.style.width = "0%";
+      recBannerText.textContent = `🔴 ГОВОРИ СЕЙЧАС: «${selectedWord.toUpperCase()}» (1.2 сек)`;
+      setStatus(`Идёт запись «${selectedWord.toUpperCase()}» (1.2 сек)...`);
+
+      clearTimeout(recWatchdog);
+      recWatchdog = setTimeout(() => {
+        if (!recording) return;
+        recording = false;
+        recBtn.disabled = false;
+        recBanner.className = "recording-banner";
+        recProgressBar.style.width = "0%";
+        setStatus("Поток аудио не пошёл (встроенный браузер или система блокирует микрофон). Открой http://127.0.0.1:8000/web_recorder.html в Google Chrome или Safari и разреши микрофон.", true);
+      }, 2600);
     }
 
     function resampleTo16k(floatArr, origSr) {
@@ -314,7 +447,11 @@
 
     function finishRecording() {
       recording = false;
+      clearTimeout(recWatchdog);
       recBtn.disabled = false;
+      recBanner.className = "recording-banner";
+      recProgressBar.style.width = "0%";
+
       const merged = new Float32Array(capturedLen);
       let offset = 0;
       for (const ch of capturedChunks) {
@@ -323,14 +460,24 @@
       }
       const sampleCount = Math.round(CLIP_SEC * audioCtx.sampleRate);
       const resampled = resampleTo16k(merged.subarray(0, sampleCount), audioCtx.sampleRate);
+      let peak = 0;
+      for (let i = 0; i < resampled.length; i++) {
+        const a = Math.abs(resampled[i]);
+        if (a > peak) peak = a;
+      }
+      const silent = take.word !== "background" && peak < 0.002;
       const blob = encodeWav16k(resampled);
       counts[take.word] += 1;
       const url = URL.createObjectURL(blob);
 
-      clips.unshift({ ...take, url, blob });
+      clips.unshift({ ...take, url, blob, silent });
       renderStats();
       renderClips();
-      statusText.textContent = `Записано: ${take.filename}`;
+      if (silent) {
+        setStatus(`⚠️ Записана тишина в ${take.filename} — проверь, двигается ли полоска громкости при речи (или открой в Chrome/Safari).`, true);
+      } else {
+        setStatus(`Готово! Записано: ${take.filename}`);
+      }
     }
 
     function renderClips() {
@@ -338,7 +485,7 @@
         .map(
           (c, idx) => `
           <div class="clip-row">
-            <span><b>${c.word.toUpperCase()}</b> · <code>${c.filename}</code></span>
+            <span><b>${c.word.toUpperCase()}</b> · <code>${c.filename}</code>${c.silent ? '<span class="clip-warn">⚠️ Тишина</span>' : ''}</span>
             <div style="display:flex; gap:8px; align-items:center;">
               <audio controls src="${c.url}"></audio>
               <a href="${c.url}" download="${c.filename}" style="color: var(--accent);">Скачать</a>
